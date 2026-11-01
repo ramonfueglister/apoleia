@@ -9,7 +9,7 @@
     [
       7.599999904632568,
       1.149999976158142,
-      7.799999713897705
+      7.029999732971191
     ]
   ],
   "metres": true,
@@ -17,23 +17,22 @@
   "detail_topology": "separate_primitives",
   "lods": {
     "detail": {
-      "triangles": 4488,
+      "triangles": 4312,
       "material_batches": 4
     },
     "medium": {
-      "triangles": 1360,
+      "triangles": 1312,
       "material_batches": 4,
       "primitive_actions": {
         "structural_mesh": 32,
-        "closed_box": 18
+        "closed_box": 14
       }
     },
     "far": {
-      "triangles": 688,
+      "triangles": 640,
       "material_batches": 4,
       "primitive_actions": {
-        "structural_mesh": 18,
-        "closed_box": 4
+        "structural_mesh": 18
       }
     }
   },
@@ -47,6 +46,22 @@
   "foundation_depth_m": 2.0,
   "walkway_height_m": 6.4,
   "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+  "merlons": {
+    "minimum_setback_m": 0.6,
+    "facade_relief_allowance_m": 0.07,
+    "whole_blocks_only": true,
+    "body_z_m": [
+      6.98,
+      7.69
+    ],
+    "cap_z_m": [
+      7.69,
+      7.8
+    ],
+    "low_parapet_max_z_m": 7.03,
+    "count": 0,
+    "blocks": []
+  },
   "wall_port": {
     "axis": "positive_x",
     "start_m": 5.751362184380705,

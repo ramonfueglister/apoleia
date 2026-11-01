@@ -1,5 +1,18 @@
 extends "res://scripts/debug/verona_bridges_check.gd"
 ## Focused real-game inspection of every wall/tower and gate join.
+func crest_capture(label: String, parcel: Vector2) -> void:
+	sample_target = terrain.world_min + parcel * .25
+	view(.65)
+	for i in range(15): await RenderingServer.frame_post_draw
+	game.set_process(false)
+	game._focus_y += .16
+	game._place_camera()
+	for i in range(15): await RenderingServer.frame_post_draw
+	var path := output.path_join(label + ".png")
+	check(root.get_texture().get_image().save_png(path) == OK, "Crest screenshot failed")
+	report.views.append({"name": label, "width_km": .65, "focus_lift_km": .16, "screenshot": path})
+	game.set_process(true)
+
 func run() -> void:
 	phase = "baseline"
 	for arg in OS.get_cmdline_user_args():
@@ -42,6 +55,8 @@ func run() -> void:
 	var origin := Vector2(18445, 6906)
 	for p in [Vector2(13,12), Vector2(12,13), Vector2(12,15), Vector2(13,16), Vector2(14,12), Vector2(15,13), Vector2(12,14), Vector2(14,16)]:
 		await capture("join-%d-%d" % [p.x, p.y], origin + p + Vector2(.5,.5), 1.0)
+	await crest_capture("merlons-gate-diagonal", origin + Vector2(14.95, 12.95))
+	await crest_capture("merlons-tower-diagonal", origin + Vector2(13.25, 12.75))
 	await capture("overview", (TARGET - terrain.world_min) / .25, 3.0)
 	# The arena obscures the southern gate from the normal camera. Inspect
 	# its wall contact from the north-west as well, without hiding any model.

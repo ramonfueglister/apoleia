@@ -1,0 +1,4582 @@
+{
+	"atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"bridge_instances": [
+		{
+			"asset": "verona_bridge_span",
+			"deck_end": 0.86595,
+			"deck_start": 0.90595,
+			"graded": true,
+			"id": "north_0",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_junction",
+			"deck_end": 0.45595,
+			"deck_start": 0.45595,
+			"graded": true,
+			"id": "east_0",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_span",
+			"deck_end": 0.82595,
+			"deck_start": 0.86595,
+			"graded": true,
+			"id": "north_1",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_span",
+			"deck_end": 0.53595,
+			"deck_start": 0.45595,
+			"graded": true,
+			"id": "east_1",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_span",
+			"deck_end": 0.80595,
+			"deck_start": 0.82595,
+			"graded": true,
+			"id": "north_2",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_span",
+			"deck_end": 0.61595,
+			"deck_start": 0.53595,
+			"graded": true,
+			"id": "east_2",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_descent",
+			"deck_end": 0.60595,
+			"deck_start": 0.80595,
+			"graded": false,
+			"id": "north_3",
+			"pedestrian_only": true
+		},
+		{
+			"asset": "verona_bridge_end",
+			"deck_end": 0.61595,
+			"deck_start": 0.61595,
+			"graded": true,
+			"id": "east_3",
+			"pedestrian_only": false
+		},
+		{
+			"asset": "verona_bridge_stairs",
+			"deck_end": 0.45595,
+			"deck_start": 0.45595,
+			"graded": false,
+			"id": "east_stairs",
+			"pedestrian_only": true
+		}
+	],
+	"bridge_ports": {
+		"actual_bank_heights_checked": true,
+		"modules": [
+			{
+				"id": "north_0",
+				"ports_checked": 2
+			},
+			{
+				"id": "east_0",
+				"ports_checked": 2
+			},
+			{
+				"id": "north_1",
+				"ports_checked": 2
+			},
+			{
+				"id": "east_1",
+				"ports_checked": 2
+			},
+			{
+				"id": "north_2",
+				"ports_checked": 2
+			},
+			{
+				"id": "east_2",
+				"ports_checked": 2
+			},
+			{
+				"id": "north_3",
+				"ports_checked": 2
+			},
+			{
+				"id": "east_3",
+				"ports_checked": 1
+			},
+			{
+				"id": "east_stairs",
+				"ports_checked": 1
+			}
+		],
+		"triangle_rays": 144
+	},
+	"failures": [],
+	"final_atlas": {
+		"kind_counts": {
+			"bridge": 8,
+			"building": 33,
+			"gate": 4,
+			"house": 8,
+			"land": 593,
+			"none": 8,
+			"plaza": 10,
+			"street": 16,
+			"tombs": 23,
+			"wall": 4,
+			"water": 105
+		},
+		"origin": [
+			18445.0,
+			6906.0
+		],
+		"residential": [
+			{
+				"front": 2,
+				"ground_y": 0.562500028812792,
+				"legacy_parts": 0,
+				"offset": [
+					15,
+					12
+				],
+				"parcel": [
+					18460,
+					6918
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					13
+				],
+				"parcel": [
+					18455,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.459375010468648,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					13
+				],
+				"parcel": [
+					18456,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					13
+				],
+				"parcel": [
+					18458,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					16,
+					13
+				],
+				"parcel": [
+					18461,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					15
+				],
+				"parcel": [
+					18455,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					15
+				],
+				"parcel": [
+					18456,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 1,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					15
+				],
+				"parcel": [
+					18458,
+					6921
+				],
+				"storeys": 2
+			}
+		],
+		"size": [
+			28.0,
+			29.0
+		],
+		"street_decoration_pieces": {
+			"street_corner_e": 7,
+			"street_corner_w": 7,
+			"street_row": 9
+		}
+	},
+	"fortifications": {
+		"atomic_fallback_checked": true,
+		"gates": 4,
+		"joins": [
+			{
+				"from": [
+					13,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					14,
+					12
+				]
+			},
+			{
+				"from": [
+					13,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					12,
+					13
+				]
+			},
+			{
+				"from": [
+					12,
+					13
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.45595
+				],
+				"step_m": 6.30252100840336,
+				"to": [
+					12,
+					14
+				]
+			},
+			{
+				"from": [
+					12,
+					14
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					12,
+					15
+				]
+			},
+			{
+				"from": [
+					12,
+					15
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					13,
+					16
+				]
+			},
+			{
+				"from": [
+					13,
+					16
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					14,
+					16
+				]
+			},
+			{
+				"from": [
+					14,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					15,
+					13
+				]
+			}
+		],
+		"tomb_parcels": 23,
+		"triangle_ray_checks": 696,
+		"wall_parcels": 4
+	},
+	"game_frames": 482,
+	"pages_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"phase": "merlon-after",
+	"replacement_audit": {
+		"buildings": [
+			{
+				"asset": "amphitheater",
+				"bounds_km": [
+					-672.662414550781,
+					0.449999988079071,
+					-493.043182373047,
+					0.6558837890625,
+					0.471716105937958,
+					0.53314208984375
+				],
+				"height_m": 19.8200035095215,
+				"id": "amphitheater"
+			},
+			{
+				"asset": "theater",
+				"bounds_km": [
+					-671.648620605469,
+					0.899999976158142,
+					-495.364410400391,
+					0.6282958984375,
+					0.426734089851379,
+					0.425628662109375
+				],
+				"height_m": 17.9300003051758,
+				"id": "theater"
+			},
+			{
+				"asset": "capitolium",
+				"bounds_km": [
+					-670.890380859375,
+					0.600000023841858,
+					-494.365814208984,
+					0.36181640625,
+					0.397697985172272,
+					0.42840576171875
+				],
+				"height_m": 16.7099990844727,
+				"id": "capitolium"
+			},
+			{
+				"asset": "thermen",
+				"bounds_km": [
+					-673.09033203125,
+					0.600000023841858,
+					-494.603912353516,
+					0.51171875,
+					0.378093540668488,
+					0.40460205078125
+				],
+				"height_m": 15.8862829208374,
+				"id": "thermen"
+			},
+			{
+				"asset": "basilika",
+				"bounds_km": [
+					-670.838012695312,
+					0.449999988079071,
+					-493.745513916016,
+					0.257080078125,
+					0.412454009056091,
+					0.68780517578125
+				],
+				"height_m": 17.3299999237061,
+				"id": "basilika"
+			},
+			{
+				"asset": "baeckerei",
+				"bounds_km": [
+					-672.943969726562,
+					0.459375023841858,
+					-494.136077880859,
+					0.218994140625,
+					0.202062010765076,
+					0.21893310546875
+				],
+				"height_m": 8.49000072479248,
+				"id": "baeckerei"
+			},
+			{
+				"asset": "schmiede",
+				"bounds_km": [
+					-672.943969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.203251987695694,
+					0.21893310546875
+				],
+				"height_m": 8.53999996185303,
+				"id": "schmiede"
+			},
+			{
+				"asset": "insula",
+				"bounds_km": [
+					-672.443969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.284172028303146,
+					0.21893310546875
+				],
+				"height_m": 11.9400005340576,
+				"id": "insula"
+			},
+			{
+				"asset": "muehle",
+				"bounds_km": [
+					-671.693969726562,
+					0.487500011920929,
+					-494.136077880859,
+					0.218994140625,
+					0.196112036705017,
+					0.21893310546875
+				],
+				"height_m": 8.24000072479248,
+				"id": "muehle"
+			},
+			{
+				"asset": "verona_townhouse",
+				"bounds_km": [
+					-671.943969726562,
+					0.5625,
+					-494.386077880859,
+					0.218994140625,
+					0.207298040390015,
+					0.21893310546875
+				],
+				"height_m": 8.71000003814697,
+				"id": "verona_townhouse"
+			},
+			{
+				"asset": "verona_terrace_house",
+				"bounds_km": [
+					-672.443969726562,
+					0.487500011920929,
+					-494.136077880859,
+					0.218994140625,
+					0.202538013458252,
+					0.21893310546875
+				],
+				"height_m": 8.51000022888184,
+				"id": "verona_terrace_house"
+			},
+			{
+				"asset": "verona_courtyard_house",
+				"bounds_km": [
+					-673.193969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.152319997549057,
+					0.21893310546875
+				],
+				"height_m": 6.40000057220459,
+				"id": "verona_courtyard_house"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.487500011920929,
+					-494.059936523438,
+					0.047607421875,
+					0.086870014667511,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6919_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.462854027748108,
+					-493.977813720703,
+					0.047607421875,
+					0.086870014667511,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6919_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.117797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.117797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.035705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_2"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.035705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_3"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.199890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_4"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.199890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_5"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.867797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18456_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.867797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18456_6920_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.949890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18456_6920_2"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.949890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18456_6920_3"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.367797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18458_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.367797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18458_6920_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.285705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18458_6920_2"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.285705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18458_6920_3"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.035705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18459_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.035705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6920_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.199890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6920_2"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.199890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18459_6920_3"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.450000017881393,
+					-493.559936523438,
+					0.047607421875,
+					0.0868699848651886,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6921_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.450000017881393,
+					-493.642059326172,
+					0.047607421875,
+					0.0868699848651886,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6921_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.117797851562,
+					0.450000017881393,
+					-492.382537841797,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6926_0"
+			}
+		],
+		"fallback_filter_checked": true,
+		"shared_asset_count": 14,
+		"street_count": 23
+	},
+	"test": "verona_wall_joins_check",
+	"views": [
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-13-12",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-13-12.png",
+			"target": [
+				-672.33447265625,
+				-494.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-12-13",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-12-13.png",
+			"target": [
+				-672.58447265625,
+				-494.026611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-12-15",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-12-15.png",
+			"target": [
+				-672.58447265625,
+				-493.526611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-13-16",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-13-16.png",
+			"target": [
+				-672.33447265625,
+				-493.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-14-12",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "capitolium",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-14-12.png",
+			"target": [
+				-672.08447265625,
+				-494.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-15-13",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "capitolium",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-15-13.png",
+			"target": [
+				-671.83447265625,
+				-494.026611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-12-14",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-12-14.png",
+			"target": [
+				-672.58447265625,
+				-493.776611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 0
+				},
+				{
+					"id": "north_1",
+					"lod": 0
+				},
+				{
+					"id": "north_2",
+					"lod": 0
+				},
+				{
+					"id": "north_3",
+					"lod": 0
+				},
+				{
+					"id": "east_0",
+					"lod": 0
+				},
+				{
+					"id": "east_1",
+					"lod": 0
+				},
+				{
+					"id": "east_2",
+					"lod": 0
+				},
+				{
+					"id": "east_3",
+					"lod": 0
+				},
+				{
+					"id": "east_stairs",
+					"lod": 0
+				}
+			],
+			"bridge_mask": 3,
+			"name": "join-14-16",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "capitolium",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-14-16.png",
+			"target": [
+				-672.08447265625,
+				-493.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"focus_lift_km": 0.16,
+			"name": "merlons-gate-diagonal",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/merlons-gate-diagonal.png",
+			"width_km": 0.65
+		},
+		{
+			"focus_lift_km": 0.16,
+			"name": "merlons-tower-diagonal",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/merlons-tower-diagonal.png",
+			"width_km": 0.65
+		},
+		{
+			"bridge_lods": [
+				{
+					"id": "north_0",
+					"lod": 1
+				},
+				{
+					"id": "north_1",
+					"lod": 1
+				},
+				{
+					"id": "north_2",
+					"lod": 1
+				},
+				{
+					"id": "north_3",
+					"lod": 1
+				},
+				{
+					"id": "east_0",
+					"lod": 1
+				},
+				{
+					"id": "east_1",
+					"lod": 1
+				},
+				{
+					"id": "east_2",
+					"lod": 1
+				},
+				{
+					"id": "east_3",
+					"lod": 1
+				},
+				{
+					"id": "east_stairs",
+					"lod": 1
+				}
+			],
+			"bridge_mask": 3,
+			"name": "overview",
+			"native_lods": [
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "capitolium",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "muehle",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18466_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18450_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18467_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18466_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6928",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6928",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18459_6929",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 1,
+					"requested": 1
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/overview.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 3.0
+		},
+		{
+			"camera_pitch_degrees": -65,
+			"camera_yaw_degrees": -135,
+			"name": "join-14-16-reverse",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/merlon-after/join-14-16-reverse.png",
+			"width_km": 1.2
+		}
+	],
+	"wall_instances": [
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_0",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_1",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_2",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_gate_18459_6918",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18459_6918_0",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_gate_diagonal_link",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18459_6918_1",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_0",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_1",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_2",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_crossing",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_gate_18460_6919",
+			"rect": [
+				18460,
+				6919,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_crossing_diagonal_link",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18460_6919_0",
+			"rect": [
+				18460,
+				6919,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_gate_18457_6920",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6920_0",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6920_1",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_0",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_1",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_2",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_0",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_1",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_2",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_gate_18459_6922",
+			"rect": [
+				18459,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18459_6922_0",
+			"rect": [
+				18459,
+				6922,
+				1,
+				1
+			],
+			"turns": 2
+		}
+	]
+}

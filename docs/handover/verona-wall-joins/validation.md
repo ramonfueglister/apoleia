@@ -2,6 +2,8 @@
 
 Status: validiert. Ausgangsstand: `a7bc55d2639b8d508911df4de8c326522beb62a1`.
 
+**Nachtrag nach erneutem Nutzerfeedback:** Diese Prüfung beseitigte die Innenraumüberschneidungen, aber nicht den sichtbaren Konflikt der direkt an Türmen endenden Zinnen. Der dafür notwendige zusätzliche Rücksprung ist separat unter [Zinnenabstand](../verona-merlon-clearance/validation.md) dokumentiert. Die damalige visuelle Entwarnung deckte diesen Befund nicht ab.
+
 Der Nutzer meldete Mauerstücke, die in Türme hineinlaufen. Die bisherigen Prüfungen deckten Strassendurchgänge und die Verbindung zweier Mauerarme zwischen Parzellen ab, aber nicht deren Eindringen in die hohlen Turmkörper. Diese Lücke in der Prüfung wird hier ausdrücklich geschlossen.
 
 ## Reproduzierter Fehler
