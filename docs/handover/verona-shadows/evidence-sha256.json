@@ -1,0 +1,25 @@
+{
+  "baseline_commit": "086b113e066f8f707bcf5bd954f09cc521b97fe9",
+  "files": {
+    "docs/handover/verona-shadows/images/baseline-1.5.png": "bd199e7bad62d712d2b9b28926213cde4f154def506499bf6975ab837696b64c",
+    "docs/handover/verona-shadows/images/baseline-12.0.png": "d92d04fff572aa17da2d66afe5ddcd37025930a40f4a74db698fc05e6d53f7d8",
+    "docs/handover/verona-shadows/images/baseline-24.0.png": "4c2bf0132c26455ba64ae92e2b3cfe23005f10499c2800d789998ca1c8f78bbb",
+    "docs/handover/verona-shadows/images/baseline-5.0.png": "d0c9f26b634657425a2ae7eba8d10d99ff520334c00a4b9aa3b9e4c344ffd4f9",
+    "docs/handover/verona-shadows/images/baseline-60.0.png": "c008575986c1bf02f6d70361d51bafad3cf2f82b44f3bea77157cec9f67ae50d",
+    "docs/handover/verona-shadows/images/final-1.5.png": "58cc86acdf4809c8bd64d549d6284fc394064927ffe908b32947eb97a5f3d1f0",
+    "docs/handover/verona-shadows/images/final-12.0.png": "edc3d89b08758e98e292231cb804642631f2348fab3255113e5dbeb834c0c252",
+    "docs/handover/verona-shadows/images/final-24.0.png": "a717568238d4997b3004b95355503e68c0004d4943327d215da7cd1548c8280c",
+    "docs/handover/verona-shadows/images/final-5.0.png": "39df65530c3569a618d8a83bf2d9c294c96edbd6cd9ef55a414c9d04f21a7570",
+    "docs/handover/verona-shadows/images/final-60.0.png": "40551757effdee9a2eb7d742de5005922ebed7119e36bde47ef3a02b0226a3d6",
+    "docs/handover/verona-shadows/images/rome-baseline-3.0.png": "092bb5fb5739c2d4a3f4d415e6e9a728e4e490b6a768594e798cad777a0aad13",
+    "docs/handover/verona-shadows/images/rome-final-3.0.png": "b7e3ba8b97325db75d7b050729e35bd4ebac593fa7bc0603f582f225b7abcd67",
+    "docs/handover/verona-shadows/clear-report.json": "a55ca27b5cb2daee00f2e68f32e396cd862ea8f165348a49e18be00ac267728e",
+    "docs/handover/verona-shadows/diagnose-report.json": "3bdd7e3db4c1588160ff1f24770fcf0564e09718ea63362e84e2f44fbc96db70",
+    "docs/handover/verona-shadows/edges-report.json": "4dd3a0834ccbafe86f184bd3de50ca9acd9f2ba9392aa8c8aee827cf04c8cc09",
+    "docs/handover/verona-shadows/performance-report.json": "d4dfbd891bc56b1987c59ce297d2910e807cc22686c9361fbb18ea4c7fa6f9cd",
+    "docs/handover/verona-shadows/surface-report.json": "25ba0859a4de52bc98899ba447f1901caa76f48565e74ccc8efc27ecc0a43606",
+    "app/project.godot": "eebcc4e69ff6c2ae1d6d6d903685777c825d7fb9c4723b1426716a7735320fe1",
+    "app/scripts/landscape.gd": "f7f0a67e622daca547a86433fa7b35dc027bc8dcac4b866529540591b567ddbe",
+    "app/scripts/debug/verona_shadows_check.gd": "9380b2f6582494f558f68d3bb9bfd117e8f78946869f27d24b5ea4b489925fc5"
+  }
+}

@@ -288,12 +288,11 @@ func _setup_look() -> void:
 	# soft edge a few pixels wide (its Steam screenshots, the trees on the
 	# lawns), not the crisp edge of before: a light PCF blur.
 	sun.shadow_blur = 1.5
-	# A strong normal offset keeps slopes and ramps free of acne ripples in
-	# a map that spans the whole deep view of the far-off camera (counted in
-	# texels of the 8192 map: about 3.5 % of a 1 km view); the depth bias
-	# stays low, so small things keep their shadows.
+	# Keep the normal offset small enough for authored stone joints, roof
+	# tiles and contact shadows. Terrain/coast meshes no longer cast shadows.
+	# MSAA handles fine geometry edges separately from shadow placement.
 	sun.shadow_bias = 0.1
-	sun.shadow_normal_bias = 28.0
+	sun.shadow_normal_bias = 2.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_fade_start = 0.98
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)
