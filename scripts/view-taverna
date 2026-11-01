@@ -1,0 +1,16 @@
+#!/bin/sh
+# Inspect the original tavern asset in the project's Godot renderer.
+set -eu
+project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ -n "${GODOT_BIN:-}" ]; then
+    godot_bin=$GODOT_BIN
+elif command -v godot >/dev/null 2>&1; then
+    godot_bin=$(command -v godot)
+elif [ -x /Applications/Godot.app/Contents/MacOS/Godot ]; then
+    godot_bin=/Applications/Godot.app/Contents/MacOS/Godot
+else
+    echo 'Godot fehlt. GODOT_BIN auf die Godot-Datei setzen.' >&2
+    exit 1
+fi
+"$godot_bin" --headless --path "$project_root/app" --editor --import
+exec "$godot_bin" --path "$project_root/app" res://scenes/showcase/taverna.tscn "$@"

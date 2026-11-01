@@ -1,0 +1,30 @@
+{
+  "slug": "basilika",
+  "source_bounds_xyz": [
+    [
+      -5.400000095367432,
+      -14.449999809265137,
+      0.0
+    ],
+    [
+      5.400000095367432,
+      14.449999809265137,
+      17.329999923706055
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 50844,
+      "material_batches": 16
+    },
+    "medium": {
+      "triangles": 9637,
+      "material_batches": 16
+    },
+    "far": {
+      "triangles": 2127,
+      "material_batches": 16
+    }
+  }
+}

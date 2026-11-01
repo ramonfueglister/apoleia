@@ -1,0 +1,14 @@
+{
+  "detail": {
+    "triangles": 101108,
+    "material_batches": 30
+  },
+  "medium": {
+    "triangles": 20350,
+    "material_batches": 30
+  },
+  "far": {
+    "triangles": 4432,
+    "material_batches": 30
+  }
+}

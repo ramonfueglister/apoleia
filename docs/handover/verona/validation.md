@@ -14,7 +14,7 @@ Godot 4.7.2, Metal, Apple M3 Pro. Bestehende Rust-Bibliothek unverändert.
   genug Parzellen für unskalierte Modelle; deterministischer Bake und
   keine Aktivierung dieser Modelle durch Namensgleichheit in anderen Städten.
 - Messung aus echten Godot-Meshes: Höhe Arena 20.02 m, Theater 18.27 m,
-  Capitolium 16.77 m, Forum 4.26 m, Basilika 17.27 m, Therme 16.01 m.
+  Capitolium 16.52 m, Forum 4.26 m, Basilika 17.02 m, Therme 16.01 m.
   Vergleichshaus: 13.27 m. Kleine Abweichungen zur Formel sind Voxelrundung
   und Abschlussdetails, siehe `VERONA.md`.
 - Sechs Spielaufnahmen: Verona 6/2/3 km, Rom 5 km, Verona 18 km und zurück
@@ -35,10 +35,25 @@ Lokale Rohdaten im Arbeitsverzeichnis: `build/verona/` (Logs/Bakes),
 `.impeccable/review/` (Aufnahmen). Erzeugbar mit den Befehlen in
 `docs/kit2/VERONA.md`; die Bilddateien sind Review-Artefakte, keine Spielassets.
 
-## Visuelle Abnahme des Referenzstands
+## Erstes internes Urteil, vom Nutzer zurückgewiesen
 
-Unabhängige Impeccable-Finish-Prüfung: **ship**, keine materiellen Korrekturen. Geprüft wurden fünf Aufnahmen (Modellvergleich, Spielübersicht, Nahansicht, fernere LOD, Rom). Statisches Urteil zu Form, Material, Lesbarkeit und sichtbarer Platzierung; keine historische oder Performance-Zertifizierung. Dokumentationsprüfung abgeschlossen, bestehende Gestaltung beibehalten.
+Die erste interne Impeccable-Finish-Prüfung meldete **ship**. Ramon hat die Modellqualität anschliessend ausdrücklich zurückgewiesen; dieses Urteil gilt daher nicht als gestalterische Abnahme. Geprüft wurden fünf Aufnahmen (Modellvergleich, Spielübersicht, Nahansicht, fernere LOD, Rom). Statisches Urteil zu Form, Material, Lesbarkeit und sichtbarer Platzierung; keine historische oder Performance-Zertifizierung. Dokumentationsprüfung abgeschlossen, bestehende Gestaltung beibehalten.
 
 ![Gleicher Massstab und echtes Spielhaus](models.png)
 
 ![Verona in der Spielansicht](game.png)
+
+## Erneute Prüfung nach Detailüberarbeitung
+
+Vier Parzellen-/Massstabstests erneut bestanden. Alle sechs Modellmeshes
+und direkte Vorher-nachher-Ansichten mit identischen Kameras gerendert.
+Arena, Theater, Capitolium und Therme zusätzlich von zwei Seiten und aus
+55° kontrolliert. Die Gegenansichten deckten fehlende Innengliederungen
+auf; Arena-Galerien und Theater-Bühnenwand wurden daraufhin ergänzt.
+
+Die vorhandenen historischen Annahmen gelten weiter. Massstabsregel,
+Wohnhaus, Stadtatlas und Simulationsdaten blieben bei der Detailarbeit
+unverändert. Die ruhiger abgestimmten Materialien stammen vollständig
+vom bestehenden Roman-Kit. Kein fremdes Modell oder Bildasset verwendet.
+
+Rohdaten: `build/verona-detail/`. Nutzerabnahme weiterhin offen.

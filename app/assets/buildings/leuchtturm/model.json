@@ -1,0 +1,30 @@
+{
+  "slug": "leuchtturm",
+  "source_bounds_xyz": [
+    [
+      -7.0,
+      -7.0,
+      0.0
+    ],
+    [
+      7.0,
+      7.0,
+      24.65999984741211
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 40933,
+      "material_batches": 19
+    },
+    "medium": {
+      "triangles": 7781,
+      "material_batches": 19
+    },
+    "far": {
+      "triangles": 1829,
+      "material_batches": 19
+    }
+  }
+}

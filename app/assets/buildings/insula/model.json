@@ -1,0 +1,30 @@
+{
+  "slug": "insula",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      11.940000534057617
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 96670,
+      "material_batches": 26
+    },
+    "medium": {
+      "triangles": 19522,
+      "material_batches": 26
+    },
+    "far": {
+      "triangles": 5794,
+      "material_batches": 26
+    }
+  }
+}

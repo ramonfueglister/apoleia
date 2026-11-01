@@ -1,0 +1,9 @@
+{
+  "status": "implemented",
+  "seed": 138,
+  "units": "metres",
+  "triangles": 101108,
+  "mesh_objects": 73,
+  "materials": 30,
+  "design": "Original concept-based tavern, not a historical reconstruction. Human-scale house per SCALE.md. Not yet placed in city simulation."
+}

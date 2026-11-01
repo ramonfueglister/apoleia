@@ -18,6 +18,8 @@ const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 const CityPlans = preload("res://scripts/city_plans.gd")
 const RomanCity = preload("res://scripts/voxel/roman_city.gd")
+const RomanSeries = preload("res://scripts/buildings/roman_series.gd")
+const CityTaverna = preload("res://scripts/buildings/city_taverna.gd")
 const WaterLines = preload("res://scripts/water_lines.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
@@ -287,6 +289,8 @@ var _landmarks: Array[MeshInstance3D] = []
 var _landmark_levels := PackedFloat32Array() # _place_landmarks
 var _landmark_names: Array[String] = [] # LANDMARKS mesh of each in _landmarks
 var plans: CityPlans # the city plans (docs/kit2/CITY_PLANS.md), null without them
+var _series: RomanSeries
+var _taverna: CityTaverna
 var _plan_lots := {} # parcel -> _plan_lots_of
 var _plan_house_lots := {} # metres -> house lots nearest that height (_lot_weights)
 ## What changed in this frame's update_view (level, props, tier, windows), for
@@ -469,6 +473,10 @@ func _lot_of(kind: int) -> int:
 func _all_materials() -> Array[ShaderMaterial]:
 	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material, _coast_material, _flags_material]
 	list.append_array(_prop_materials)
+	if _taverna != null:
+		list.append_array(_taverna.materials)
+	if _series != null:
+		list.append_array(_series.materials)
 	return list
 
 func _landmark_entries() -> Array:
@@ -586,6 +594,14 @@ func _build_nodes() -> void:
 		_prop_materials[kind].set_shader_parameter("prop_n", PROP_N)
 	_set_tree_table(_props_tier == 2)
 	_build_landmarks()
+	_taverna = CityTaverna.new()
+	add_child(_taverna)
+	if not _taverna.setup(plans, _terrain_material, DIORAMA_KM_PER_M):
+		_taverna.queue_free()
+		_taverna = null
+	_series = RomanSeries.new()
+	add_child(_series)
+	_series.setup(self)
 
 ## Same as landscape.gd lonlat_to_world.
 static func _lonlat_world(ll: Vector2) -> Vector2:
@@ -1114,6 +1130,11 @@ func _list_plan_lots(tiles: PackedFloat32Array, lots: Array[PackedFloat32Array],
 ## four more turn it an eighth further (tile_props.gdshader).
 func _plan_lots_of(i: int, j: int, v: int) -> Array:
 	var key := Vector2i(i, j)
+	# The terrace is still listed; only its old house mesh is replaced.
+	if _taverna != null and key == _taverna.parcel:
+		return []
+	if _series != null and _series.replaces(key):
+		return []
 	if not _plan_lots.has(key):
 		var kind := v & 255
 		match kind:
@@ -1452,7 +1473,13 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	# beyond the prop patch towns are roof coloured tiles again
 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
 	_terrain_material.set_shader_parameter("prop_n", prop_n)
+	if _series != null:
+		var series_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)
+		_series.update_view(width, series_patch)
 	_update_town_list()
+	if _taverna != null:
+		var prop_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)
+		_taverna.update_view(width, level, prop_patch, ground_y(_taverna.centre))
 	_update_coast_list()
 	if sub_tiles:
 		_update_sub_window()

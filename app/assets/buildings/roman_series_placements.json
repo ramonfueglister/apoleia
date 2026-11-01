@@ -1,0 +1,317 @@
+{
+  "entries": [
+    {
+      "id": "amphitheater",
+      "city": "verona",
+      "label": "Amphitheater",
+      "landmark": "verona_arena",
+      "rect": [
+        18457,
+        6923,
+        3,
+        3
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue archäologische Rekonstruktionsbehauptung."
+    },
+    {
+      "id": "theater",
+      "city": "verona",
+      "label": "Theater",
+      "landmark": "verona_theatre",
+      "rect": [
+        18461,
+        6914,
+        3,
+        2
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue archäologische Rekonstruktionsbehauptung."
+    },
+    {
+      "id": "capitolium",
+      "city": "verona",
+      "label": "Capitolium",
+      "landmark": "verona_capitolium",
+      "rect": [
+        18464,
+        6918,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 2,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue archäologische Rekonstruktionsbehauptung. Treppenfront nach Norden zum bestehenden Forum."
+    },
+    {
+      "id": "thermen",
+      "city": "verona",
+      "label": "Thermen",
+      "landmark": "verona_baths",
+      "rect": [
+        18455,
+        6917,
+        3,
+        2
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue archäologische Rekonstruktionsbehauptung."
+    },
+    {
+      "id": "basilika",
+      "city": "verona",
+      "label": "Basilika",
+      "landmark": "verona_basilica",
+      "rect": [
+        18464,
+        6920,
+        2,
+        4
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue archäologische Rekonstruktionsbehauptung."
+    },
+    {
+      "id": "baeckerei",
+      "city": "verona",
+      "label": "Bäckerei",
+      "rect": [
+        18456,
+        6919,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (11, 13); Modellfront folgt der im Atlas gespeicherten Strassenseite (2). Typologische Gestaltung, Haushalts-/Simulationszuordnung unverändert; Taverna auf Offset (10, 13) bleibt frei."
+    },
+    {
+      "id": "schmiede",
+      "city": "verona",
+      "label": "Schmiede",
+      "rect": [
+        18456,
+        6921,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 2,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (11, 15); Modellfront folgt der im Atlas gespeicherten Strassenseite (0). Typologische Gestaltung, Haushalts-/Simulationszuordnung unverändert; Taverna auf Offset (10, 13) bleibt frei."
+    },
+    {
+      "id": "insula",
+      "city": "verona",
+      "label": "Insula",
+      "rect": [
+        18458,
+        6921,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 3,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (13, 15); Modellfront folgt der im Atlas gespeicherten Strassenseite (1). Typologische Gestaltung, Haushalts-/Simulationszuordnung unverändert; Taverna auf Offset (10, 13) bleibt frei."
+    },
+    {
+      "id": "muehle",
+      "city": "verona",
+      "label": "Mühle",
+      "rect": [
+        18461,
+        6919,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (16, 13); Modellfront folgt der im Atlas gespeicherten Strassenseite (2). Typologische Gestaltung, Haushalts-/Simulationszuordnung unverändert; Taverna auf Offset (10, 13) bleibt frei. Enthält nur einen eigenen kleinen Wasserkanal; Flussverlauf und Brücke bleiben unverändert."
+    },
+    {
+      "id": "domus",
+      "city": "trier",
+      "label": "Domus",
+      "rect": [
+        16995,
+        5005,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Vier vorhandene Wohnparzellen südlich des Forums; Südzugang zur bestehenden Strasse. Künstlerische typologische Zusammenfassung zu einem Atriumhaus, keine belegte historische Adresse; Atlas und Haushalte unverändert."
+    },
+    {
+      "id": "villa_rustica",
+      "city": "alexandria",
+      "label": "Villa rustica",
+      "rect": [
+        24816,
+        13254,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 2,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Vier vorhandene Wohnparzellen am östlichen Mauerrand; Nordzugang zur bestehenden Strasse. Künstlerische Villa-/Hofdarstellung, keine Behauptung eines nachgewiesenen Landguts an dieser Stelle; Mauer und Atlas unverändert."
+    },
+    {
+      "id": "toepferei",
+      "city": "alexandria",
+      "label": "Töpferei",
+      "rect": [
+        24809,
+        13257,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Vier Wohnparzellen mit bestehender Strasse an der Südseite; künstlerischer Werkstatthof mit Brennofen. Keine archäologische Standortbehauptung oder Änderung der Simulation."
+    },
+    {
+      "id": "macellum",
+      "city": "alexandria",
+      "label": "Macellum",
+      "rect": [
+        24811,
+        13250,
+        3,
+        3
+      ],
+      "expected_kinds": [
+        1,
+        6
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Neun zusammenhängende Haus-/Gartenparzellen, bestehende Strasse an der Südseite. Bewusst künstlerische Platzierung des Markthofs; nicht als nachgewiesenes Macellum Alexandrias ausgegeben. Keine Änderungen am Atlas oder an bekannten Monumenten."
+    },
+    {
+      "id": "bibliothek",
+      "city": "alexandria",
+      "label": "Bibliothek",
+      "rect": [
+        24814,
+        13251,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        1,
+        6
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Zwei Garten- und zwei Wohnparzellen, Südzugang an vorhandener Strasse. Generisches Bibliotheksgebäude als künstlerische Ergänzung; ausdrücklich keine Rekonstruktion der Grossen Bibliothek, des Mouseion oder des Serapeums."
+    },
+    {
+      "id": "curia",
+      "city": "trier",
+      "label": "Curia",
+      "rect": [
+        17000,
+        5005,
+        2,
+        2
+      ],
+      "expected_kinds": [
+        1,
+        6
+      ],
+      "turns": 2,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Zwei Garten- und zwei Wohnparzellen südlich des bestehenden öffentlichen Bezirks; Zugang nach Norden. Generisches Ratsgebäude als künstlerische Ergänzung, kein Ersatz der Aula Palatina und keine behauptete historische Curia-Adresse."
+    },
+    {
+      "id": "horreum",
+      "city": "rome",
+      "label": "Horreum",
+      "rect": [
+        18955,
+        8502,
+        1,
+        2
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Rechteck Porticus Aemilia (horrea), Modellcode warehouse. Typologische Speicher-Darstellung des bereits so bezeichneten Standorts; gleichmässige Verkleinerung auf die schmale Parzelle, keine Achsenverzerrung."
+    },
+    {
+      "id": "leuchtturm",
+      "city": "alexandria",
+      "label": "Leuchtturm – Pharos",
+      "rect": [
+        24801,
+        13248,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        4
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exakte bestehende Pharos-Parzelle, im Altatlas technisch als tomb codiert. Typologischer Leuchtturm ersetzt allein diese bisherige Darstellung; kein Verschieben der Küste, Insel oder Wasserzellen. Gleichmässige Grössenanpassung."
+    },
+    {
+      "id": "rundtempel",
+      "city": "rome",
+      "label": "Rundtempel",
+      "rect": [
+        18966,
+        8498,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        6
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Bestehende generische Gartenparzelle östlich des Ludus Magnus mit Strassenzugang im Süden. Künstlerische typologische Kultbau-Ergänzung, kein benannter oder archäologisch belegter Tempel. Das Pantheon und alle bekannten Tempel bleiben unangetastet; gleichmässige Verkleinerung."
+    },
+    {
+      "id": "stadttor",
+      "city": "trier",
+      "label": "Stadttor",
+      "rect": [
+        16999,
+        4999,
+        3,
+        1
+      ],
+      "expected_kinds": [
+        8,
+        9
+      ],
+      "turns": 0,
+      "notes": "Geprüft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exakter bestehender nördlicher Streifen Mauer–Tor–Mauer, Portal mittig auf der Torzelle. Typologische Torarchitektur an der vorhandenen Torstelle, keine Rekonstruktion der Porta Nigra. Nord-Süd-Strassenanschlüsse bleiben durchgängig; keine Strassenparzelle wird ersetzt. Gleichmässige Verkleinerung passt auch die Gebäudetiefe an."
+    }
+  ]
+}

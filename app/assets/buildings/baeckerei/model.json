@@ -1,0 +1,30 @@
+{
+  "slug": "baeckerei",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      8.49000072479248
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 60248,
+      "material_batches": 29
+    },
+    "medium": {
+      "triangles": 11499,
+      "material_batches": 29
+    },
+    "far": {
+      "triangles": 2487,
+      "material_batches": 29
+    }
+  }
+}

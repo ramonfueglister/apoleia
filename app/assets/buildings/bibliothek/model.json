@@ -1,0 +1,30 @@
+{
+  "slug": "bibliothek",
+  "source_bounds_xyz": [
+    [
+      -11.0,
+      -10.0,
+      0.0
+    ],
+    [
+      11.0,
+      10.0,
+      17.37055206298828
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 92454,
+      "material_batches": 19
+    },
+    "medium": {
+      "triangles": 18339,
+      "material_batches": 19
+    },
+    "far": {
+      "triangles": 3033,
+      "material_batches": 19
+    }
+  }
+}

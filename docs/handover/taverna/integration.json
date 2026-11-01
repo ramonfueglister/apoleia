@@ -1,0 +1,65 @@
+{
+  "bounds_km": [
+    0.21893310546875,
+    0.207060009241104,
+    0.1666259765625
+  ],
+  "failures": [],
+  "materials": 30,
+  "parcel": [
+    18455,
+    6919
+  ],
+  "textures": 9,
+  "zoom_samples": [
+    {
+      "lod": 0,
+      "sub_tiles": true,
+      "terrain_level": 0,
+      "visible": true,
+      "width_km": 1.5
+    },
+    {
+      "lod": 1,
+      "sub_tiles": true,
+      "terrain_level": 0,
+      "visible": true,
+      "width_km": 3.0
+    },
+    {
+      "lod": 2,
+      "sub_tiles": true,
+      "terrain_level": 0,
+      "visible": true,
+      "width_km": 8.0
+    },
+    {
+      "lod": 2,
+      "sub_tiles": false,
+      "terrain_level": 0,
+      "visible": true,
+      "width_km": 18.0
+    },
+    {
+      "lod": 2,
+      "sub_tiles": false,
+      "terrain_level": 1,
+      "visible": false,
+      "width_km": 60.0
+    },
+    {
+      "lod": 2,
+      "sub_tiles": false,
+      "terrain_level": 2,
+      "visible": false,
+      "width_km": 120.0
+    },
+    {
+      "lod": 0,
+      "sub_tiles": true,
+      "terrain_level": 0,
+      "visible": true,
+      "width_km": 1.5
+    }
+  ]
+}

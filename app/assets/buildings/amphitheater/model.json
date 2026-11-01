@@ -1,0 +1,30 @@
+{
+  "slug": "amphitheater",
+  "source_bounds_xyz": [
+    [
+      -13.779512405395508,
+      -11.199999809265137,
+      0.0
+    ],
+    [
+      13.779512405395508,
+      11.199999809265137,
+      19.820003509521484
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 184188,
+      "material_batches": 13
+    },
+    "medium": {
+      "triangles": 34317,
+      "material_batches": 13
+    },
+    "far": {
+      "triangles": 7817,
+      "material_batches": 13
+    }
+  }
+}

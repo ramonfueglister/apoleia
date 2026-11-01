@@ -1,0 +1,30 @@
+{
+  "slug": "villa_rustica",
+  "source_bounds_xyz": [
+    [
+      -8.899999618530273,
+      -8.899999618530273,
+      0.0
+    ],
+    [
+      8.899999618530273,
+      8.899999618530273,
+      7.720000267028809
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 80864,
+      "material_batches": 28
+    },
+    "medium": {
+      "triangles": 15306,
+      "material_batches": 28
+    },
+    "far": {
+      "triangles": 3328,
+      "material_batches": 28
+    }
+  }
+}

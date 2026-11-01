@@ -1,0 +1,30 @@
+{
+  "slug": "thermen",
+  "source_bounds_xyz": [
+    [
+      -10.75,
+      -8.5,
+      0.0
+    ],
+    [
+      10.75,
+      8.5,
+      15.886282920837402
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 65836,
+      "material_batches": 19
+    },
+    "medium": {
+      "triangles": 13088,
+      "material_batches": 19
+    },
+    "far": {
+      "triangles": 2560,
+      "material_batches": 19
+    }
+  }
+}

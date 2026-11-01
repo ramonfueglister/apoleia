@@ -1,7 +1,7 @@
 # Verona als Referenz für S136
 
-Stand: 31.10.2026. **Implementiert und technisch/visuell geprüft**, noch nicht
-von Ramon abgenommen. Begrenzte Referenzstadt, keine vollständige historische
+Stand: 31.10.2026. **Implementiert, nach Ramons Qualitätskritik gestalterisch überarbeitet**,
+noch nicht von Ramon abgenommen. Begrenzte Referenzstadt, keine vollständige historische
 Rekonstruktion und keine Umstellung aller Städte.
 
 ## Was umgesetzt ist
@@ -106,3 +106,41 @@ orthografische Kamera mit 35° Neigung aus Nordosten:
 
 Spielansicht: `--view=10.999,45.442,6`. Prüfprotokoll und Aufnahmen:
 [Verona-Prüfung](../handover/verona/validation.md).
+
+## Detailüberarbeitung nach Qualitätskritik
+
+Der erste Stand (`026d3db`) wurde von Ramon als zu wenig detailliert
+zurückgewiesen. Das vorangegangene interne «ship»-Urteil war keine
+Nutzerabnahme und traf den geforderten gestalterischen Anspruch nicht.
+
+Die Überarbeitung betrifft die sechs Modelle, nicht Stadtplan, Simulation,
+Massstabsformel oder die Modelle anderer Städte:
+
+- Arena: gleichmässige Bogenjoche entlang der Ellipse, Rundbögen mit
+  Archivolten, kräftigere Pfeiler, Kämpfer und Gesimse, ringförmige
+  Geschossdecken und auch innen klar gegliederte Galerien; Podium,
+  Sitzreihen, Treppenstreifen, Umgang und überdeckte Hauptzugänge.
+- Theater: ausgearbeitete Galerien und Loggia; zwei Säulenordnungen,
+  Gesims und Nischen auf der bühnenzugewandten Wand; gegliederte Rückseite.
+- Capitolium: gestufter Sockel, Basen/Kapitelle, Gebälk, rückseitige
+  Cella-Gliederung, Giebelakzent, Dachrand und Antefixe.
+- Forum: Plattenfugen, eingefasste Portiken mit Rückwänden und Sockelband;
+  ausgearbeiteter Statuensockel.
+- Basilika: Türrahmungen, gegliederte Stirnseiten, Fenster und Dachränder.
+- Therme: gewölbter Hauptraum, niedrige Seitenflügel, thermale Fenster,
+  Stützglieder und Gesimse, Wasserbecken und Umgang statt einer hohen
+  leeren Halle mit Satteldach.
+
+Farbwechsel und Ziegelrelief wurden bewusst beruhigt, damit Bauteile
+ablesbar bleiben. Dekor, innere Verkehrsführung und der thermale Aufriss
+sind eigene gestalterische Rekonstruktionen, keine neu belegten Details.
+Die bestehende Palette und 0.25-m-Voxelsprache bleiben erhalten.
+
+Die Vorschau unterstützt jetzt einen direkten Vergleich aus Nordost und
+Südwest (35°) sowie eine höhere Kontrollansicht (55°). Der alte Code wird
+nur als ausdrücklich übergebene lokale Vergleichsdatei geladen:
+
+```sh
+git show 026d3db:app/scripts/voxel/verona_landmarks.gd > /tmp/verona-before.gd
+/Applications/Godot.app/Contents/MacOS/Godot --path app --script res://scripts/debug/verona_preview.gd -- --compare=theatre --before-code=/tmp/verona-before.gd --out=/absolute/path/theatre-compare.png
+```
