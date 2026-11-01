@@ -1,0 +1,66 @@
+{
+  "slug": "verona_gate_crossing",
+  "source_bounds_xyz": [
+    [
+      -4.975662708282471,
+      -4.975662708282471,
+      -2.0
+    ],
+    [
+      4.975662708282471,
+      4.975662708282471,
+      9.687128067016602
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "detail_topology": "separate_primitives",
+  "lods": {
+    "detail": {
+      "triangles": 126848,
+      "material_batches": 12
+    },
+    "medium": {
+      "triangles": 16544,
+      "material_batches": 12,
+      "primitive_actions": {
+        "closed_box": 1088,
+        "structural_mesh": 120,
+        "roof_tile_plane": 704,
+        "tube": 16,
+        "beam": 16
+      }
+    },
+    "far": {
+      "triangles": 5728,
+      "material_batches": 8,
+      "primitive_actions": {
+        "closed_box": 416,
+        "structural_mesh": 24,
+        "roof_tile_removed": 704,
+        "tube": 16,
+        "beam": 16
+      }
+    }
+  },
+  "family": "verona_fortifications",
+  "origin_policy": "authored",
+  "authored_origin_xyz": [
+    0,
+    0,
+    0
+  ],
+  "foundation_depth_m": 2.0,
+  "walkway_height_m": 6.4,
+  "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+  "clear_passage": {
+    "axes": [
+      "x",
+      "y"
+    ],
+    "width_m": 3.6,
+    "straight_height_m": 4.1,
+    "arch_crown_height_m": 5.8999999999999995,
+    "no_floor": true
+  }
+}

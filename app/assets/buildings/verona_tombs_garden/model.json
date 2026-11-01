@@ -1,0 +1,67 @@
+{
+  "slug": "verona_tombs_garden",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      6.679996967315674
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "detail_topology": "separate_primitives",
+  "lods": {
+    "detail": {
+      "triangles": 10214,
+      "material_batches": 23
+    },
+    "medium": {
+      "triangles": 4078,
+      "material_batches": 22,
+      "primitive_actions": {
+        "closed_box": 29,
+        "paving_top": 29,
+        "structural_mesh": 62,
+        "circular_cap": 1,
+        "lathe": 40,
+        "fine_trim_removed": 8,
+        "tube": 5,
+        "roof_tile_plane": 36,
+        "beam": 8
+      }
+    },
+    "far": {
+      "triangles": 2340,
+      "material_batches": 16,
+      "primitive_actions": {
+        "closed_box": 29,
+        "paving_top": 29,
+        "structural_mesh": 46,
+        "circular_cap": 1,
+        "lathe": 34,
+        "detail_removed": 16,
+        "fine_trim_removed": 2,
+        "roof_tile_removed": 36,
+        "tube": 1,
+        "beam": 8
+      }
+    }
+  },
+  "design": {
+    "status": "implementiert",
+    "front": "south",
+    "height_cap_m": 7,
+    "footprint_cap_m": [
+      9.2,
+      9.2
+    ],
+    "clear_front_path_m": 1.15,
+    "description": "Original typological memorial garden; quiet planted rear, southern approach and abstract nonverbal tablets",
+    "provenance": "Original geometry; no claimed historical identity, copied inscription or terrain modification"
+  }
+}

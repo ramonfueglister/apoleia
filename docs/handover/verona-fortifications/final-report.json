@@ -1,0 +1,5006 @@
+{
+	"atlas": {
+		"kind_counts": {
+			"bridge": 8,
+			"building": 33,
+			"gate": 4,
+			"house": 8,
+			"land": 593,
+			"none": 8,
+			"plaza": 10,
+			"street": 16,
+			"tombs": 23,
+			"wall": 4,
+			"water": 105
+		},
+		"origin": [
+			18445.0,
+			6906.0
+		],
+		"residential": [
+			{
+				"front": 2,
+				"ground_y": 0.562500028812792,
+				"legacy_parts": 0,
+				"offset": [
+					15,
+					12
+				],
+				"parcel": [
+					18460,
+					6918
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					13
+				],
+				"parcel": [
+					18455,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.459375010468648,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					13
+				],
+				"parcel": [
+					18456,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					13
+				],
+				"parcel": [
+					18458,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					16,
+					13
+				],
+				"parcel": [
+					18461,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					15
+				],
+				"parcel": [
+					18455,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					15
+				],
+				"parcel": [
+					18456,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 1,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					15
+				],
+				"parcel": [
+					18458,
+					6921
+				],
+				"storeys": 2
+			}
+		],
+		"size": [
+			28.0,
+			29.0
+		],
+		"street_decoration_pieces": {
+			"street_corner_e": 7,
+			"street_corner_w": 7,
+			"street_row": 9
+		}
+	},
+	"atlas_sha256_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_sha256_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atomic_partial_observations": 16,
+	"clock_paused": true,
+	"failures": [],
+	"final_atlas": {
+		"kind_counts": {
+			"bridge": 8,
+			"building": 33,
+			"gate": 4,
+			"house": 8,
+			"land": 593,
+			"none": 8,
+			"plaza": 10,
+			"street": 16,
+			"tombs": 23,
+			"wall": 4,
+			"water": 105
+		},
+		"origin": [
+			18445.0,
+			6906.0
+		],
+		"residential": [
+			{
+				"front": 2,
+				"ground_y": 0.562500028812792,
+				"legacy_parts": 0,
+				"offset": [
+					15,
+					12
+				],
+				"parcel": [
+					18460,
+					6918
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					13
+				],
+				"parcel": [
+					18455,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.459375010468648,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					13
+				],
+				"parcel": [
+					18456,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					13
+				],
+				"parcel": [
+					18458,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 2,
+				"ground_y": 0.487500015471596,
+				"legacy_parts": 0,
+				"offset": [
+					16,
+					13
+				],
+				"parcel": [
+					18461,
+					6919
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					10,
+					15
+				],
+				"parcel": [
+					18455,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 0,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					11,
+					15
+				],
+				"parcel": [
+					18456,
+					6921
+				],
+				"storeys": 2
+			},
+			{
+				"front": 1,
+				"ground_y": 0.450000008800998,
+				"legacy_parts": 0,
+				"offset": [
+					13,
+					15
+				],
+				"parcel": [
+					18458,
+					6921
+				],
+				"storeys": 2
+			}
+		],
+		"size": [
+			28.0,
+			29.0
+		],
+		"street_decoration_pieces": {
+			"street_corner_e": 7,
+			"street_corner_w": 7,
+			"street_row": 9
+		}
+	},
+	"fortifications": {
+		"atomic_fallback_checked": true,
+		"gates": 4,
+		"joins": [
+			{
+				"from": [
+					13,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					14,
+					12
+				]
+			},
+			{
+				"from": [
+					13,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					12,
+					13
+				]
+			},
+			{
+				"from": [
+					12,
+					13
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.45595
+				],
+				"step_m": 6.30252100840336,
+				"to": [
+					12,
+					14
+				]
+			},
+			{
+				"from": [
+					12,
+					14
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					12,
+					15
+				]
+			},
+			{
+				"from": [
+					12,
+					15
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					13,
+					16
+				]
+			},
+			{
+				"from": [
+					13,
+					16
+				],
+				"rendered_grounds_km": [
+					0.45595,
+					0.45595
+				],
+				"step_m": 0.0,
+				"to": [
+					14,
+					16
+				]
+			},
+			{
+				"from": [
+					14,
+					12
+				],
+				"rendered_grounds_km": [
+					0.60595,
+					0.60595
+				],
+				"step_m": 0.0,
+				"to": [
+					15,
+					13
+				]
+			}
+		],
+		"tomb_parcels": 23,
+		"triangle_ray_checks": 696,
+		"wall_parcels": 4
+	},
+	"game_frames": 728,
+	"loader_failures": [],
+	"pages_sha256_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_sha256_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"phase": "final",
+	"renderer": "Apple M3 Pro (Apple9)",
+	"replacement_audit": {
+		"buildings": [
+			{
+				"asset": "amphitheater",
+				"bounds_km": [
+					-672.662414550781,
+					0.449999988079071,
+					-493.043182373047,
+					0.6558837890625,
+					0.471716105937958,
+					0.53314208984375
+				],
+				"height_m": 19.8200035095215,
+				"id": "amphitheater"
+			},
+			{
+				"asset": "theater",
+				"bounds_km": [
+					-671.648620605469,
+					0.899999976158142,
+					-495.364410400391,
+					0.6282958984375,
+					0.426734089851379,
+					0.425628662109375
+				],
+				"height_m": 17.9300003051758,
+				"id": "theater"
+			},
+			{
+				"asset": "capitolium",
+				"bounds_km": [
+					-670.890380859375,
+					0.600000023841858,
+					-494.365814208984,
+					0.36181640625,
+					0.397697985172272,
+					0.42840576171875
+				],
+				"height_m": 16.7099990844727,
+				"id": "capitolium"
+			},
+			{
+				"asset": "thermen",
+				"bounds_km": [
+					-673.09033203125,
+					0.600000023841858,
+					-494.603912353516,
+					0.51171875,
+					0.378093540668488,
+					0.40460205078125
+				],
+				"height_m": 15.8862829208374,
+				"id": "thermen"
+			},
+			{
+				"asset": "basilika",
+				"bounds_km": [
+					-670.838012695312,
+					0.449999988079071,
+					-493.745513916016,
+					0.257080078125,
+					0.412454009056091,
+					0.68780517578125
+				],
+				"height_m": 17.3299999237061,
+				"id": "basilika"
+			},
+			{
+				"asset": "baeckerei",
+				"bounds_km": [
+					-672.943969726562,
+					0.459375023841858,
+					-494.136077880859,
+					0.218994140625,
+					0.202062010765076,
+					0.21893310546875
+				],
+				"height_m": 8.49000072479248,
+				"id": "baeckerei"
+			},
+			{
+				"asset": "schmiede",
+				"bounds_km": [
+					-672.943969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.203251987695694,
+					0.21893310546875
+				],
+				"height_m": 8.53999996185303,
+				"id": "schmiede"
+			},
+			{
+				"asset": "insula",
+				"bounds_km": [
+					-672.443969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.284172028303146,
+					0.21893310546875
+				],
+				"height_m": 11.9400005340576,
+				"id": "insula"
+			},
+			{
+				"asset": "muehle",
+				"bounds_km": [
+					-671.693969726562,
+					0.487500011920929,
+					-494.136077880859,
+					0.218994140625,
+					0.196112036705017,
+					0.21893310546875
+				],
+				"height_m": 8.24000072479248,
+				"id": "muehle"
+			},
+			{
+				"asset": "verona_townhouse",
+				"bounds_km": [
+					-671.943969726562,
+					0.5625,
+					-494.386077880859,
+					0.218994140625,
+					0.207298040390015,
+					0.21893310546875
+				],
+				"height_m": 8.71000003814697,
+				"id": "verona_townhouse"
+			},
+			{
+				"asset": "verona_terrace_house",
+				"bounds_km": [
+					-672.443969726562,
+					0.487500011920929,
+					-494.136077880859,
+					0.218994140625,
+					0.202538013458252,
+					0.21893310546875
+				],
+				"height_m": 8.51000022888184,
+				"id": "verona_terrace_house"
+			},
+			{
+				"asset": "verona_courtyard_house",
+				"bounds_km": [
+					-673.193969726562,
+					0.450000017881393,
+					-493.636077880859,
+					0.218994140625,
+					0.152319997549057,
+					0.21893310546875
+				],
+				"height_m": 6.40000057220459,
+				"id": "verona_courtyard_house"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.487500011920929,
+					-494.059936523438,
+					0.047607421875,
+					0.086870014667511,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6919_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.462854027748108,
+					-493.977813720703,
+					0.047607421875,
+					0.086870014667511,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6919_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.117797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.117797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.035705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_2"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.035705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_3"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-673.199890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18455_6920_4"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-673.199890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18455_6920_5"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.867797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18456_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.867797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18456_6920_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.949890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18456_6920_2"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.949890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18456_6920_3"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.367797851562,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18458_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.367797851562,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18458_6920_1"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.285705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18458_6920_2"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.285705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18458_6920_3"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.035705566406,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18459_6920_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.035705566406,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6920_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.199890136719,
+					0.450000017881393,
+					-493.718292236328,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6920_2"
+			},
+			{
+				"asset": "verona_street_house",
+				"bounds_km": [
+					-672.199890136719,
+					0.450000017881393,
+					-493.892059326172,
+					0.066650390625,
+					0.151605993509293,
+					0.066650390625
+				],
+				"height_m": 6.37000036239624,
+				"id": "verona_street_18459_6920_3"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.450000017881393,
+					-493.559936523438,
+					0.047607421875,
+					0.0868699848651886,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6921_0"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.190368652344,
+					0.450000017881393,
+					-493.642059326172,
+					0.047607421875,
+					0.0868699848651886,
+					0.066650390625
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6921_1"
+			},
+			{
+				"asset": "verona_street_shop",
+				"bounds_km": [
+					-672.117797851562,
+					0.450000017881393,
+					-492.382537841797,
+					0.066650390625,
+					0.0868699848651886,
+					0.047607421875
+				],
+				"height_m": 3.65000009536743,
+				"id": "verona_street_18459_6926_0"
+			}
+		],
+		"fallback_filter_checked": true,
+		"shared_asset_count": 14,
+		"street_count": 23
+	},
+	"samples_per_view": 60,
+	"target": [
+		-672.0,
+		-494.0
+	],
+	"test": "verona_fortifications_check",
+	"views": [
+		{
+			"draws": {
+				"median": 2542.0,
+				"p95": 2542.0
+			},
+			"frame_ms": {
+				"median": 13.378,
+				"p95": 16.868
+			},
+			"gpu_ms": {
+				"median": 0.0,
+				"p95": 0.0
+			},
+			"native_lods": [
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "capitolium",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "muehle",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "schmiede",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "insula",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18466_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18466_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 0,
+					"requested": 0
+				}
+			],
+			"primitives": {
+				"median": 4669742.0,
+				"p95": 4669742.0
+			},
+			"process_ms": {
+				"median": 19.622,
+				"p95": 504.04
+			},
+			"render_cpu_ms": {
+				"median": 1.55599999427795,
+				"p95": 1.91700005531311
+			},
+			"samples": [
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.312,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.41999995708466
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 15.291,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.46700000762939
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.056,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.49699997901917
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.324,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.59500002861023
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.901,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.46899998188019
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.345,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.50699996948242
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.72,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.51800000667572
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.481,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.49399995803833
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.591,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.49300003051758
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.078,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.45299994945526
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.594,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.67299997806549
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 15.277,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.51400005817413
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.106,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.50999999046326
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.109,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.53100001811981
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.991,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.44599997997284
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.056,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.51600003242493
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.338,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.56299996376038
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.359,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.47000002861023
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.856,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.4099999666214
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.768,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.50899994373322
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.367,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 504.04,
+					"render_cpu_ms": 1.51199996471405
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.41,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.55999994277954
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.992,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.46399998664856
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.513,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.89900004863739
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.965,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.692999958992
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.703,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.65699994564056
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.574,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.83700001239777
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.561,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.59300005435944
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.926,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.55599999427795
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.663,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.40100002288818
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.447,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.48199999332428
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.818,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.692999958992
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.548,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.68400001525879
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.924,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.51600003242493
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.822,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.57000005245209
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.022,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.91700005531311
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.378,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.56299996376038
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.992,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.64499998092651
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.246,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.63900005817413
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.689,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.42299997806549
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.64,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.55299997329712
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 17.013,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.69599997997284
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.389,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.57299995422363
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.03,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.65900003910065
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.58,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.48099994659424
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 15.683,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.63900005817413
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 17.495,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.64900004863739
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.463,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 2.60700011253357
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.175,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.55599999427795
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.328,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.56599998474121
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.45,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.56400001049042
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.533,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.45200002193451
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.145,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.62300002574921
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.518,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 2.44799995422363
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 16.868,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.59200000762939
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.29,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.58899998664856
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.812,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.61000001430511
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.973,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.43299996852875
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.517,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.47300004959106
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 14.057,
+					"gpu_ms": 0.0,
+					"primitives": 4669742.0,
+					"process_ms": 19.622,
+					"render_cpu_ms": 1.51800000667572
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-fortifications/final/width-1.5.png",
+			"terrain_level": 0,
+			"width_km": 1.5
+		},
+		{
+			"draws": {
+				"median": 3218.0,
+				"p95": 3218.0
+			},
+			"frame_ms": {
+				"median": 15.945,
+				"p95": 17.744
+			},
+			"gpu_ms": {
+				"median": 0.0,
+				"p95": 0.0
+			},
+			"native_lods": [
+				{
+					"id": "basilika",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "amphitheater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "theater",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "capitolium",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "thermen",
+					"rendered": 0,
+					"requested": 0
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "muehle",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "schmiede",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "insula",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18450_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18466_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6928",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18459_6929",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18466_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18467_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6928",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 1,
+					"requested": 1
+				}
+			],
+			"primitives": {
+				"median": 6475526.0,
+				"p95": 6475526.0
+			},
+			"process_ms": {
+				"median": 21.327,
+				"p95": 265.629
+			},
+			"render_cpu_ms": {
+				"median": 1.96300005912781,
+				"p95": 2.36500000953674
+			},
+			"samples": [
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.627,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 2.43400001525879
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.459,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.94900000095367
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.654,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.85899996757507
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.301,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 2.00699996948242
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.757,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.75699996948242
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.851,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.92499995231628
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.076,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.942999958992
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.608,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 2.07200002670288
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.282,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.94799995422363
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.809,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.99699997901917
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.307,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 1.87100005149841
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.984,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 265.629,
+					"render_cpu_ms": 2.45799994468689
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.931,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.85699999332428
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.523,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.03099989891052
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.481,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.96300005912781
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.083,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.17700004577637
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.763,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.06299996376038
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.687,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.96599996089935
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.417,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.23399996757507
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 17.949,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.09400010108948
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.468,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.92900002002716
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.504,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.17000007629395
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.511,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.02600002288818
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.773,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.99199998378754
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.455,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.90900003910065
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.661,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.93799996376038
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.21,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.9099999666214
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.081,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.36500000953674
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.407,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.89999997615814
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.854,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.00600004196167
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.484,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.91100001335144
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.453,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.94200003147125
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.421,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.11500000953674
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.879,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.94500005245209
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.484,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.07299995422363
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 17.547,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.96300005912781
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.654,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.88800001144409
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.101,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.95200002193451
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.953,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.98099994659424
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.089,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.807000041008
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.753,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.04500007629395
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.378,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.05100011825562
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.302,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.01699995994568
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.326,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.07599997520447
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.35,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.875
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.458,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.86300003528595
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.137,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.97800004482269
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.454,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.75199997425079
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.562,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.85500001907349
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.733,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.07999992370605
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.927,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.78100001811981
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.506,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.03800010681152
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 16.437,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.86899995803833
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.945,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 2.06800007820129
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.966,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.99500000476837
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 17.744,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.93400001525879
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.427,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.92400002479553
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.839,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.89499998092651
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 20.929,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.87999999523163
+				},
+				{
+					"draws": 3218.0,
+					"frame_ms": 15.406,
+					"gpu_ms": 0.0,
+					"primitives": 6475526.0,
+					"process_ms": 21.327,
+					"render_cpu_ms": 1.89699995517731
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-fortifications/final/width-5.0.png",
+			"terrain_level": 0,
+			"width_km": 5.0
+		},
+		{
+			"draws": {
+				"median": 1401.0,
+				"p95": 1401.0
+			},
+			"frame_ms": {
+				"median": 12.608,
+				"p95": 15.865
+			},
+			"gpu_ms": {
+				"median": 0.0,
+				"p95": 0.0
+			},
+			"native_lods": [
+				{
+					"id": "basilika",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "amphitheater",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "theater",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "capitolium",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "thermen",
+					"rendered": 1,
+					"requested": 1
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "muehle",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "schmiede",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "insula",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18450_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18466_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6928",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18459_6929",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18466_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18467_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6928",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 2,
+					"requested": 2
+				}
+			],
+			"primitives": {
+				"median": 2162803.0,
+				"p95": 2162803.0
+			},
+			"process_ms": {
+				"median": 17.175,
+				"p95": 183.046
+			},
+			"render_cpu_ms": {
+				"median": 1.08299994468689,
+				"p95": 1.28299999237061
+			},
+			"samples": [
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.736,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.26600003242493
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 13.869,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.20700001716614
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.551,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.21700000762939
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.518,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.06900000572205
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.879,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.15699994564056
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.477,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.14999997615814
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.853,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.02799999713898
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 13.041,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.08899998664856
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.865,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.05099999904633
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 13.027,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.19400000572205
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.912,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 0.999000012874603
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.634,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.04799997806549
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.772,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.08299994468689
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.874,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.05999994277954
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 15.694,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.10199999809265
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.776,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.28299999237061
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.722,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.01400005817413
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.648,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.08000004291534
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.994,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.05599999427795
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.828,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.05200004577637
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.989,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.22399997711182
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.49,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 183.046,
+					"render_cpu_ms": 1.11699998378754
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.674,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.00399994850159
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 16.823,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.02400004863739
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.62,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.18700003623962
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.627,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.09099996089935
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.788,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.03400003910065
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.978,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.01499998569489
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.125,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.07700002193451
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.842,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.08299994468689
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.301,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.10000002384186
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.909,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.05900001525879
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.149,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.08200001716614
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 16.263,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 0.990000009536743
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.335,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.19200003147125
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 13.12,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.05499994754791
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.823,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.06900000572205
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.021,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.13999998569489
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.78,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.00699996948242
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.804,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.15199995040894
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.955,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.00100004673004
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 13.011,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.09899997711182
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.608,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.09300005435944
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.881,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.10800004005432
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.854,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.11699998378754
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.076,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.057000041008
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.825,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 0.985000014305115
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.016,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.17599999904633
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.782,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.28600001335144
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.811,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.06200003623962
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.807,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.01699995994568
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 15.865,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.13499999046326
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.927,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.01800000667572
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.872,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.08299994468689
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.909,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.32500004768372
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.684,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 0.981000006198883
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.941,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.17200005054474
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 11.929,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.05499994754791
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.292,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.10099995136261
+				},
+				{
+					"draws": 1401.0,
+					"frame_ms": 12.492,
+					"gpu_ms": 0.0,
+					"primitives": 2162803.0,
+					"process_ms": 17.175,
+					"render_cpu_ms": 1.04100000858307
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-fortifications/final/width-12.0.png",
+			"terrain_level": 0,
+			"width_km": 12.0
+		},
+		{
+			"draws": {
+				"median": 1301.0,
+				"p95": 1301.0
+			},
+			"frame_ms": {
+				"median": 14.375,
+				"p95": 16.328
+			},
+			"gpu_ms": {
+				"median": 0.0,
+				"p95": 0.0
+			},
+			"native_lods": [
+				{
+					"id": "basilika",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "amphitheater",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "theater",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "capitolium",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "thermen",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "baeckerei",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "muehle",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_townhouse",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_terrace_house",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "schmiede",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "insula",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6919_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_4",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6921_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6921_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6926_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6913",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6915",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18452_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18450_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18451_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18454_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18466_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6927",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6928",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18459_6929",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_courtyard_house",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18455_6920_5",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18456_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18458_6920_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_street_18459_6920_3",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6913",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6918_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6918_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6918_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18451_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18454_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6919_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18460_6919_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18466_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6920_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6920_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18467_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18453_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18457_6921_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_1",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18458_6922_2",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_fort_18459_6922_0",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6926",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6928",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6914",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18459_6918",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18453_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18460_6919",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18457_6920",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18452_6921",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_gate_18459_6922",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18460_6926",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "verona_tombs_18458_6927",
+					"rendered": 2,
+					"requested": 2
+				}
+			],
+			"primitives": {
+				"median": 3337201.0,
+				"p95": 3337201.0
+			},
+			"process_ms": {
+				"median": 174.741,
+				"p95": 174.741
+			},
+			"render_cpu_ms": {
+				"median": 1.02400004863739,
+				"p95": 1.16499996185303
+			},
+			"samples": [
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.197,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.01300001144409
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.312,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.06599998474121
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.957,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.07799994945526
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.348,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.09300005435944
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.458,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.999000012874603
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 13.98,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.13300001621246
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.501,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.02400004863739
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.238,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.12899994850159
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.383,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.03600001335144
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.268,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.99099999666214
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.166,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.05400002002716
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.395,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.01400005817413
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.402,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.948000013828278
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.475,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.06400001049042
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.168,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.0349999666214
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.034,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.02199995517731
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.169,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.01699995994568
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.235,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.975000023841858
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.253,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.989000022411346
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.24,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.990000009536743
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.56,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.00899994373322
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.149,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.05900001525879
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.831,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 0.949999988079071
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.372,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.02100002765656
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.25,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.11800003051758
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.066,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.05299997329712
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.45,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.03799998760223
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.2,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.00899994373322
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.375,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.08800005912781
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.364,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.05599999427795
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 16.328,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 174.741,
+					"render_cpu_ms": 1.00300002098083
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.994,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.16499996185303
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.381,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.02900004386902
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.343,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.01199996471405
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.357,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.12699997425079
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.251,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.09099996089935
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.215,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.01600003242493
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.149,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.01400005817413
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.939,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.949999988079071
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.215,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.00199997425079
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.249,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.999000012874603
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.064,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.925000011920929
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.452,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.999000012874603
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.326,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.03400003910065
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.151,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.00600004196167
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.48,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.968999981880188
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.245,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.10199999809265
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.229,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.901000022888184
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.01,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.06200003623962
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 16.4,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.08800005912781
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 19.46,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.01800000667572
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.584,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.20000004768372
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 13.968,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.16499996185303
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.57,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.09899997711182
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.389,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.944999992847443
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.309,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.04700005054474
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.197,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.09599995613098
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.189,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 1.14699995517731
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 14.427,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.961000025272369
+				},
+				{
+					"draws": 1301.0,
+					"frame_ms": 15.139,
+					"gpu_ms": 0.0,
+					"primitives": 3337201.0,
+					"process_ms": 16.268,
+					"render_cpu_ms": 0.962999999523163
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-fortifications/final/width-24.0.png",
+			"terrain_level": 0,
+			"width_km": 24.0
+		},
+		{
+			"draws": {
+				"median": 485.0,
+				"p95": 485.0
+			},
+			"frame_ms": {
+				"median": 14.184,
+				"p95": 15.037
+			},
+			"gpu_ms": {
+				"median": 0.0,
+				"p95": 0.0
+			},
+			"native_lods": [
+				{
+					"id": "basilika",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "amphitheater",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "theater",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "capitolium",
+					"rendered": 2,
+					"requested": 2
+				},
+				{
+					"id": "thermen",
+					"rendered": 2,
+					"requested": 2
+				}
+			],
+			"primitives": {
+				"median": 4450161.0,
+				"p95": 4450161.0
+			},
+			"process_ms": {
+				"median": 165.683,
+				"p95": 165.683
+			},
+			"render_cpu_ms": {
+				"median": 0.358000010251999,
+				"p95": 0.395999997854233
+			},
+			"samples": [
+				{
+					"draws": 485.0,
+					"frame_ms": 14.692,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.349000006914139
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.177,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.349000006914139
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.154,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.349000006914139
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.294,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.379999995231628
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.012,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.377000004053116
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.277,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.330000013113022
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 13.94,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.333999991416931
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 15.063,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.328999996185303
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.164,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.365000009536743
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.197,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.324000000953674
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.269,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.351999998092651
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.053,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.375
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.484,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.377999991178513
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.239,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.397000014781952
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.992,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.358999997377396
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.065,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.331999987363815
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.242,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.36599999666214
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.124,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.340000003576279
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.34,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.358999997377396
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 15.235,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.344999998807907
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.173,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.377999991178513
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.846,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.433999985456467
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.037,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.388000011444092
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.184,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.360000014305115
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.274,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.375
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.156,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.374000012874603
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.265,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.349999994039536
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.037,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.38400000333786
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.763,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.367000013589859
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.104,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.358999997377396
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.089,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.352999985218048
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.11,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.395999997854233
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.296,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.36599999666214
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.262,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.356000006198883
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.135,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.370000004768372
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.905,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.354999989271164
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.012,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 165.683,
+					"render_cpu_ms": 0.352999985218048
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.035,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.337000012397766
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.094,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.381000012159348
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.143,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.35699999332428
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.403,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.395000010728836
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.024,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.372999995946884
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.718,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.317999988794327
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.091,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.352999985218048
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 13.994,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.344999998807907
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.377,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.317999988794327
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 13.962,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.352999985218048
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.367,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.358999997377396
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.015,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.360000014305115
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.854,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.360000014305115
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.066,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.358000010251999
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.021,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.375999987125397
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.325,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.330000013113022
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.047,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.345999985933304
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 15.037,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.331999987363815
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.192,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.333999991416931
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.73,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.326999992132187
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.133,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.358999997377396
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.103,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.342999994754791
+				},
+				{
+					"draws": 485.0,
+					"frame_ms": 14.269,
+					"gpu_ms": 0.0,
+					"primitives": 4450161.0,
+					"process_ms": 15.087,
+					"render_cpu_ms": 0.342000007629395
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-fortifications/final/width-60.0.png",
+			"terrain_level": 1,
+			"width_km": 60.0
+		}
+	],
+	"vsync": 1,
+	"window": [
+		1440,
+		1000
+	]
+}

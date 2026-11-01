@@ -37,9 +37,11 @@ func setup(spec: Dictionary, packed: PackedScene, metadata: Dictionary, terrain)
 	if turns % 2 != 0:
 		footprint = Vector2(footprint.y, footprint.x)
 	fit = minf(1.0, 0.94 * minf(rect.size.x / (footprint.x * terrain.DIORAMA_KM_PER_M), rect.size.y / (footprint.y * terrain.DIORAMA_KM_PER_M)))
+	if spec.get("keep_origin", false):
+		fit = 1.0 # authored wall lengths join adjacent parcels at world scale
 	var unit: float = terrain.DIORAMA_KM_PER_M * fit
 	scale = Vector3.ONE * unit
-	rotation.y = -turns * PI * 0.5
+	rotation.y = -turns * PI * 0.5 - (PI * 0.25 if spec.get("diagonal", false) else 0.0)
 	position = Vector3(centre.x, 0, centre.y)
 	var scene := packed.instantiate() as Node3D
 	add_child(scene)
@@ -48,7 +50,7 @@ func setup(spec: Dictionary, packed: PackedScene, metadata: Dictionary, terrain)
 		var lod := scene.find_child("Model_" + tag, true, false) as Node3D
 		if lod == null:
 			return false
-		lod.position = Vector3(-(lo.x + hi.x) * 0.5, -lo.z, (lo.y + hi.y) * 0.5)
+		lod.position = Vector3.ZERO if spec.get("keep_origin", false) else Vector3(-(lo.x + hi.x) * 0.5, -lo.z, (lo.y + hi.y) * 0.5)
 		lods.append(lod)
 		lod.visible = false
 		for node in lod.find_children("*", "MeshInstance3D", true, false):

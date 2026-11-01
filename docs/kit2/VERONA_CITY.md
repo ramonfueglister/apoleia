@@ -2,7 +2,7 @@
 
 Stand: validiert; Spielprüfung unter `docs/handover/verona-city/validation.md`.
 
-Veronas acht Wohnparzellen verwenden jetzt ausschliesslich die eigenen römischen Modelle. Die akzeptierte Taverna sowie Bäckerei, Schmiede, Insula und Mühle bleiben erhalten; Hofhaus, Stadthaus mit Loggia und Haus mit Dachhof füllen die drei übrigen Parzellen. Die 23 zusätzlich auf Strassenparzellen dargestellten Häuser/Läden erhalten eigene kleine Modelle. Fahrbahnen, Wege, bestehende Höfe, Mauern, Tore, Forum und Gräber behalten ihre bisherigen Plätze und Funktionen. Dies ist die Vereinheitlichung der Wohn- und Geschäftsgebäude, kein Neubau jeder Infrastrukturkomponente.
+Veronas acht Wohnparzellen verwenden jetzt ausschliesslich die eigenen römischen Modelle. Die akzeptierte Taverna sowie Bäckerei, Schmiede, Insula und Mühle bleiben erhalten; Hofhaus, Stadthaus mit Loggia und Haus mit Dachhof füllen die drei übrigen Parzellen. Die 23 zusätzlich auf Strassenparzellen dargestellten Häuser/Läden erhalten eigene kleine Modelle. Fahrbahnen, Wege, bestehende Höfe, Mauern, Tore, Forum und Gräber behalten ihre bisherigen Plätze und Funktionen. Die anschliessende Modellrunde für Mauern, Tore und Gräber ist separat unter [Veronas Befestigungen](VERONA_FORTIFICATIONS.md) dokumentiert.
 
 Start: `scripts/play-verona`. Einzelne Wohnhäuser sind auch mit `scripts/play-roman-building verona_townhouse` usw. erreichbar.
 
