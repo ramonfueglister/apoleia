@@ -19,6 +19,7 @@ const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 const CityPlans = preload("res://scripts/city_plans.gd")
 const RomanCity = preload("res://scripts/voxel/roman_city.gd")
 const RomanSeries = preload("res://scripts/buildings/roman_series.gd")
+const VeronaBridges = preload("res://scripts/buildings/verona_bridges.gd")
 const CityTaverna = preload("res://scripts/buildings/city_taverna.gd")
 const WaterLines = preload("res://scripts/water_lines.gd")
 
@@ -290,6 +291,7 @@ var _landmark_levels := PackedFloat32Array() # _place_landmarks
 var _landmark_names: Array[String] = [] # LANDMARKS mesh of each in _landmarks
 var plans: CityPlans # the city plans (docs/kit2/CITY_PLANS.md), null without them
 var _series: RomanSeries
+var _bridges: VeronaBridges
 var _taverna: CityTaverna
 var _plan_lots := {} # parcel -> _plan_lots_of
 var _plan_house_lots := {} # metres -> house lots nearest that height (_lot_weights)
@@ -602,6 +604,9 @@ func _build_nodes() -> void:
 	_series = RomanSeries.new()
 	add_child(_series)
 	_series.setup(self)
+	_bridges = VeronaBridges.new()
+	add_child(_bridges)
+	_bridges.setup(self)
 
 ## Same as landscape.gd lonlat_to_world.
 static func _lonlat_world(ll: Vector2) -> Vector2:
@@ -1480,6 +1485,7 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	if _series != null:
 		var series_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)
 		_series.update_view(width, series_patch)
+		if _bridges != null: _bridges.update_view(width, series_patch)
 	_update_town_list()
 	if _taverna != null:
 		var prop_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)

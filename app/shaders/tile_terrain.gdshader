@@ -685,6 +685,9 @@ void fragment() {
 		int town = tt_town(tile);
 		// up close a city plan's parcel: its town class (open land and water 0)
 		ivec3 plan = tile_km < 0.75 ? cp_texel(cp_parcel(p)) : ivec3(0);
+		// Restore the existing river/shore surface under loaded arches.
+		// Geometry/corner heights remain untouched: no invented lower water.
+		if (cp_verona_bridge_active(cp_parcel(p))) { plan.r = CP_WATER; }
 		bool planned = plan.r != CP_NONE;
 		if (planned) { town = cp_town(plan.r); }
 		// one flat colour per tile; where two landscapes meet, the half towards

@@ -1,0 +1,583 @@
+{
+	"cells": [
+		{
+			"corners": [
+				5.0,
+				6.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 11,
+			"links": 0,
+			"offset": [
+				13,
+				7
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				6.0,
+				6.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 7,
+			"links": 5,
+			"offset": [
+				14,
+				7
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				6.0,
+				6.0,
+				6.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 11,
+			"links": 0,
+			"offset": [
+				15,
+				7
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.75595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				13,
+				8
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.75595,
+			"kind": 10,
+			"links": 5,
+			"offset": [
+				14,
+				8
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				6.0,
+				6.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 11,
+			"links": 0,
+			"offset": [
+				15,
+				8
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				5.0,
+				4.0
+			],
+			"ground_km": 0.75595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				13,
+				9
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.75595,
+			"kind": 10,
+			"links": 5,
+			"offset": [
+				14,
+				9
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				6.0,
+				6.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 11,
+			"links": 0,
+			"offset": [
+				15,
+				9
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				5.0,
+				5.0,
+				4.0
+			],
+			"ground_km": 0.75595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				13,
+				10
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				5.0,
+				5.0
+			],
+			"ground_km": 0.75595,
+			"kind": 10,
+			"links": 5,
+			"offset": [
+				14,
+				10
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				6.0,
+				6.0,
+				5.0
+			],
+			"ground_km": 0.90595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				15,
+				10
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				5.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.75595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				13,
+				11
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				5.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.75595,
+			"kind": 10,
+			"links": 5,
+			"offset": [
+				14,
+				11
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				5.0,
+				6.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.90595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				15,
+				11
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 8,
+			"links": 0,
+			"offset": [
+				13,
+				12
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 9,
+			"links": 5,
+			"offset": [
+				14,
+				12
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 1,
+			"links": 0,
+			"offset": [
+				15,
+				12
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 7,
+			"links": 7,
+			"offset": [
+				14,
+				13
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 7,
+			"links": 15,
+			"offset": [
+				14,
+				14
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 7,
+			"links": 5,
+			"offset": [
+				14,
+				15
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 9,
+			"links": 12,
+			"offset": [
+				15,
+				13
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 10,
+			"links": 11,
+			"offset": [
+				15,
+				14
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				15,
+				15
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 1,
+			"links": 0,
+			"offset": [
+				16,
+				13
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 10,
+			"links": 10,
+			"offset": [
+				16,
+				14
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				16,
+				15
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				17,
+				13
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				3.0,
+				4.0,
+				4.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 10,
+			"links": 10,
+			"offset": [
+				17,
+				14
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				3.0,
+				4.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				17,
+				15
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				18,
+				13
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				3.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 10,
+			"links": 8,
+			"offset": [
+				18,
+				14
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 13,
+			"links": 0,
+			"offset": [
+				18,
+				15
+			],
+			"water": 3
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				4.0,
+				4.0
+			],
+			"ground_km": 0.60595,
+			"kind": 4,
+			"links": 0,
+			"offset": [
+				19,
+				13
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				4.0,
+				4.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.60595,
+			"kind": 4,
+			"links": 0,
+			"offset": [
+				19,
+				14
+			],
+			"water": 0
+		},
+		{
+			"corners": [
+				3.0,
+				3.0,
+				3.0,
+				3.0
+			],
+			"ground_km": 0.45595,
+			"kind": 4,
+			"links": 0,
+			"offset": [
+				19,
+				15
+			],
+			"water": 0
+		}
+	],
+	"level_h": 0.15,
+	"sub_tiles": true,
+	"tile_km": 0.25
+}

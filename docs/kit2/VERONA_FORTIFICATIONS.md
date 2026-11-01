@@ -4,6 +4,8 @@ Stand: validiert; [Spielprüfung und Messwerte](../handover/verona-fortification
 
 Die anschliessende Verbesserung der feinen Kanten und Nahschatten ist unter [Nahansicht – Kanten und Schatten](../handover/verona-shadows/validation.md) dokumentiert.
 
+Die beiden anschliessend ergänzten Steinbrücken sind unter [Verona – Brücken und Uferanschlüsse](VERONA_BRIDGES.md) dokumentiert.
+
 Nach den Wohnvierteln erhalten Veronas vier Mauerparzellen, vier Tore und 23 Grabparzellen eigene Modelle. Sie verwenden dieselbe Materialfamilie und denselben einheitlichen Massstab wie die akzeptierten Häuser. Die Modelle sind eigene römische Bautypen, keine behaupteten archäologischen Rekonstruktionen. Stadtplan, Strassennetz, Fluss, Parzellen und Simulation werden nicht neu erzeugt.
 
 ## Modelle
