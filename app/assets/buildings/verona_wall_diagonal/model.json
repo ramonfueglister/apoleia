@@ -2,7 +2,7 @@
   "slug": "verona_wall_diagonal",
   "source_bounds_xyz": [
     [
-      -1.1500000953674316,
+      1.4410107135772705,
       -1.149999976158142,
       -2.0
     ],
@@ -17,21 +17,23 @@
   "detail_topology": "separate_primitives",
   "lods": {
     "detail": {
-      "triangles": 17248,
+      "triangles": 13104,
       "material_batches": 4
     },
     "medium": {
-      "triangles": 1512,
+      "triangles": 2200,
       "material_batches": 4,
       "primitive_actions": {
-        "closed_box": 126
+        "structural_mesh": 36,
+        "closed_box": 72
       }
     },
     "far": {
-      "triangles": 504,
+      "triangles": 1024,
       "material_batches": 4,
       "primitive_actions": {
-        "closed_box": 42
+        "structural_mesh": 22,
+        "closed_box": 16
       }
     }
   },
@@ -47,8 +49,16 @@
   "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
   "wall_port": {
     "axis": "positive_x",
-    "start_m": -1.15,
+    "start_m": 1.4380108191427645,
     "end_m": 7.6,
     "width_m": 2.3
+  },
+  "attachment": {
+    "type": "square_v",
+    "shell": "central_tower",
+    "face_m": 1.83,
+    "source_axes": "Blender X longitudinal, Y transverse, Z up",
+    "closed_end_faces": true,
+    "interior_intrusion": false
   }
 }

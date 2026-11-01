@@ -5,6 +5,7 @@ Or -- --model=verona_gate. Metres, Blender Z up; no recentering or scaling.
 These are artistic Roman typologies, not archaeological reconstructions.
 """
 import sys, math, json
+from collections import defaultdict
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import roman_asset_kit as k
@@ -17,6 +18,83 @@ WALL_WIDTH=2.30
 WALKWAY_Z=6.40
 SPRING_Z=4.10
 CLEAR_RADIUS=1.80
+TOWER_FACE=1.83
+GATE_OUTER_FACE=4.88
+
+
+def clip_solid(vertices, faces, planes):
+    """Clip one convex masonry primitive, closing every new attachment face.
+
+    Each plane (nx, ny, distance) keeps nx*x + ny*y >= distance. All
+    wall-arm primitives are convex solids; cutting them independently keeps
+    real mortar relief and avoids a global boolean/weld across touching blocks.
+    """
+    polygons=[[Vector(vertices[i]) for i in face] for face in faces]
+    for nx,ny,distance in planes:
+        distances=[nx*v.x+ny*v.y-distance for polygon in polygons for v in polygon]
+        if min(distances)>=-1e-9:continue
+        if max(distances)<=1e-9:return [],[]
+        clipped=[]; intersections=[]
+        for polygon in polygons:
+            result=[]
+            for a,b in zip(polygon,polygon[1:]+polygon[:1]):
+                da=nx*a.x+ny*a.y-distance
+                db=nx*b.x+ny*b.y-distance
+                if da>=-1e-9:result.append(a)
+                if (da>1e-9 and db<-1e-9) or (da<-1e-9 and db>1e-9):
+                    hit=a.lerp(b,da/(da-db));result.append(hit);intersections.append(hit)
+                elif abs(da)<=1e-9:intersections.append(a)
+            unique=[]
+            for vertex in result:
+                if not unique or (vertex-unique[-1]).length>1e-8:unique.append(vertex)
+            if len(unique)>2 and (unique[0]-unique[-1]).length<1e-8:unique.pop()
+            if len(unique)>=3:clipped.append(unique)
+        if not clipped:return [],[]
+        cap={tuple(round(c,8) for c in point):point for point in intersections}
+        if len(cap)>=3:
+            points=list(cap.values());centre=sum(points,Vector())/len(points)
+            tangent=Vector((-ny,nx,0)).normalized()
+            points.sort(key=lambda point:math.atan2(point.z-centre.z,(point-centre).dot(tangent)))
+            clipped.append(points)
+        polygons=clipped
+    result_vertices=[];result_faces=[];indices={}
+    for polygon in polygons:
+        face=[]
+        for point in polygon:
+            key=tuple(round(c,8) for c in point)
+            if key not in indices:
+                indices[key]=len(result_vertices);result_vertices.append(tuple(point))
+            face.append(indices[key])
+        if len(set(face))>=3:result_faces.append(tuple(face))
+    return result_vertices,result_faces
+
+
+def trim_wall_attachment(regions):
+    """Keep a union of disjoint convex regions outside the receiving shell.
+
+    A diagonal square-tower attachment consists of two capped halves meeting
+    at source Y0. The normal gate instead uses one convex, tapered end. Regions
+    are authored in Blender XY and are rebuilt independently for every LOD.
+    """
+    result=defaultdict(lambda:[[],[],[]])
+    for key,(vertices,faces,records) in k.GEO.items():
+        for record in records:
+            start=record['vertex_start'];end=start+record['vertex_count']
+            local_vertices=vertices[start:end]
+            local_faces=[tuple(i-start for i in face) for face in faces[record['face_start']:record['face_start']+record['face_count']]]
+            for planes in regions:
+                inside=all(all(nx*v[0]+ny*v[1]>=distance-1e-9 for nx,ny,distance in planes) for v in local_vertices)
+                verts,polys=(local_vertices,local_faces) if inside else clip_solid(local_vertices,local_faces,planes)
+                if not polys:continue
+                g=result[key];offset=len(g[0]);face_start=len(g[1])
+                g[0].extend(verts);g[1].extend(tuple(offset+i for i in face) for face in polys)
+                g[2].append(dict(record,vertex_start=offset,vertex_count=len(verts),face_start=face_start,face_count=len(polys),primitive=record['primitive'] if inside else {'kind':'mesh'}))
+    k.GEO=result
+
+
+def square_attachment(face):
+    distance=math.sqrt(2)*face
+    return [[(0,1,0),(1,1,distance)],[(0,-1,0),(1,-1,distance)]]
 
 
 def frame(p,u=(1,0,0),n=(0,-1,0)):
@@ -206,10 +284,26 @@ def arch_bridge(p=(0,0,0),u=(1,0,0),n=(0,-1,0),depth=4.76):
     battlements(-outer,outer,0,depth,p,u,n)
 
 
-def wall_arm():ashlar_wall(-1.15,5.30,foundation_depth=6.50)
-def wall_diagonal():ashlar_wall(-1.15,7.60)
-def gate_link():ashlar_wall(3.50,5.30)
-def gate_diagonal_link():ashlar_wall(3.50,7.60)
+def wall_arm():ashlar_wall(TOWER_FACE,5.30,foundation_depth=6.50)
+
+def wall_diagonal():
+    ashlar_wall(math.sqrt(2)*TOWER_FACE-WALL_WIDTH/2,7.60)
+    trim_wall_attachment(square_attachment(TOWER_FACE))
+
+def gate_link():ashlar_wall(GATE_OUTER_FACE,5.30)
+
+def gate_diagonal_link():
+    # At the normal NS gate this SE link leaves the shallow east pavilion.
+    # Blender source Y is Godot -Z: world X=(r+s)/sqrt2, Z=(r-s)/sqrt2.
+    # Both constraints are necessary: exterior south face and passage-side
+    # inner edge. Their intersection removes the previously dangling wedge.
+    planes=[(1,-1,math.sqrt(2)*2.43),(1,1,math.sqrt(2)*2.22)]
+    ashlar_wall((2.43+2.22)/math.sqrt(2),7.60)
+    trim_wall_attachment([planes])
+
+def gate_crossing_diagonal_link():
+    ashlar_wall(math.sqrt(2)*GATE_OUTER_FACE-WALL_WIDTH/2,7.60)
+    trim_wall_attachment(square_attachment(GATE_OUTER_FACE))
 def wall_tower():pavilion(0,0,3.80,3.80)
 
 def gate():
@@ -226,9 +320,21 @@ BUILDERS={
  'verona_wall_arm':wall_arm,'verona_wall_diagonal':wall_diagonal,
  'verona_wall_tower':wall_tower,'verona_gate_link':gate_link,
  'verona_gate_diagonal_link':gate_diagonal_link,'verona_gate':gate,
+ 'verona_gate_crossing_diagonal_link':gate_crossing_diagonal_link,
  'verona_gate_crossing':gate_crossing,
 }
-PORTS={'verona_wall_arm':(-1.15,5.30),'verona_wall_diagonal':(-1.15,7.60),'verona_gate_link':(3.50,5.30),'verona_gate_diagonal_link':(3.50,7.60)}
+PORTS={'verona_wall_arm':(TOWER_FACE,5.30),
+       'verona_wall_diagonal':(math.sqrt(2)*TOWER_FACE-WALL_WIDTH/2,7.60),
+       'verona_gate_link':(GATE_OUTER_FACE,5.30),
+       'verona_gate_diagonal_link':((2.43+2.22)/math.sqrt(2),7.60),
+       'verona_gate_crossing_diagonal_link':(math.sqrt(2)*GATE_OUTER_FACE-WALL_WIDTH/2,7.60)}
+ATTACHMENTS={
+ 'verona_wall_arm':{'type':'flat','shell':'central_tower','face_m':TOWER_FACE},
+ 'verona_wall_diagonal':{'type':'square_v','shell':'central_tower','face_m':TOWER_FACE},
+ 'verona_gate_link':{'type':'flat','shell':'gate_pavilion','face_m':GATE_OUTER_FACE},
+ 'verona_gate_diagonal_link':{'type':'tapered','shell':'normal_gate_pavilion','keep_halfplanes_xy':[[1,-1,math.sqrt(2)*2.43],[1,1,math.sqrt(2)*2.22]]},
+ 'verona_gate_crossing_diagonal_link':{'type':'square_v','shell':'crossing_corner_pavilion','face_m':GATE_OUTER_FACE},
+}
 
 
 def finish_asset(slug):
@@ -239,6 +345,7 @@ def finish_asset(slug):
                  'historical_status':'Original artistic Roman typology; not an archaeological reconstruction.'})
     if slug in PORTS:
         start,end=PORTS[slug];data['wall_port']={'axis':'positive_x','start_m':start,'end_m':end,'width_m':WALL_WIDTH}
+        data['attachment']={**ATTACHMENTS[slug],'source_axes':'Blender X longitudinal, Y transverse, Z up','closed_end_faces':True,'interior_intrusion':False}
     if slug in ('verona_gate','verona_gate_crossing'):
         data['clear_passage']={'axes':['y'] if slug=='verona_gate' else ['x','y'],'width_m':3.60,'straight_height_m':SPRING_Z,'arch_crown_height_m':SPRING_Z+CLEAR_RADIUS,'no_floor':True}
     path.write_text(json.dumps(data,indent=2)+'\n')
@@ -246,5 +353,5 @@ def finish_asset(slug):
 
 if __name__=='__main__':
     args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else ['--all']
-    chosen=list(BUILDERS) if '--all' in args else [next(a.split('=',1)[1] for a in args if a.startswith('--model='))]
+    chosen=list(BUILDERS) if '--all' in args else [a.split('=',1)[1] for a in args if a.startswith('--model=')]
     for slug in chosen:finish_asset(slug)

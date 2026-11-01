@@ -91,9 +91,10 @@ func _add_verona_fortifications() -> void:
 			elif texel.x in [8, 9]:
 				var gate := texel.x == 9
 				var group := "verona_gate_%d_%d" % [x, y]
+				var crossing := false
 				if gate:
 					var links := texel.y >> 4
-					var crossing := (links & 5) != 0 and (links & 10) != 0
+					crossing = (links & 5) != 0 and (links & 10) != 0
 					var spec := _infrastructure_spec(group, "verona_gate_crossing" if crossing else "verona_gate", parcel, 9)
 					spec.turns = 0 if crossing or (links & 5) != 0 else 1
 					spec.keep_origin = true
@@ -102,12 +103,20 @@ func _add_verona_fortifications() -> void:
 				# Match the existing cardinal/diagonal neighbour rules at BOTH
 				# walls and gates. This also joins adjacent diagonal gate cells.
 				var pieces: Array = _terrain._plan_wall(parcel, absi(hash(parcel)))
+				# Authored wall arms terminate at the central tower's outer faces.
+				# A future straight node without a tower needs centre-reaching arms;
+				# retain its complete original lots until that asset variant exists.
+				var has_tower := pieces.any(func(piece: Vector2i) -> bool: return _terrain.LOT_KINDS[piece.x][1] == 2)
+				if not gate and not has_tower:
+					continue
 				for i in pieces.size():
 					var piece: Vector2i = pieces[i]
 					var variant: int = _terrain.LOT_KINDS[piece.x][1]
 					if gate and variant == 2:
 						continue
 					var asset: String = ["verona_gate_link", "verona_gate_diagonal_link"][variant] if gate else ["verona_wall_arm", "verona_wall_diagonal", "verona_wall_tower"][variant]
+					if gate and crossing and variant == 1:
+						asset = "verona_gate_crossing_diagonal_link"
 					var spec := _infrastructure_spec("verona_fort_%d_%d_%d" % [x, y, i], asset, parcel, texel.x)
 					spec.turns = piece.y % 4
 					spec.diagonal = piece.y >= 4

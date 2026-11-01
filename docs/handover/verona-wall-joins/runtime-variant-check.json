@@ -1,0 +1,11 @@
+{
+	"cases": [
+		"tower_wall",
+		"towerless_legacy_fallback",
+		"normal_gate_diagonal",
+		"crossing_gate_diagonal",
+		"atomic_gate_members"
+	],
+	"failures": [],
+	"test": "wall_join_variant_selection"
+}
