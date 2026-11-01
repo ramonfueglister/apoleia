@@ -20,6 +20,11 @@ SPRING_Z=4.10
 CLEAR_RADIUS=1.80
 TOWER_FACE=1.83
 GATE_OUTER_FACE=4.88
+MERLON_SETBACK=0.60
+# Corner ashlar projects .07 m beyond the structural facade. Measure the
+# visible gap from that outermost masonry, not just from the hidden wall core.
+FACADE_RELIEF=0.07
+MERLON_RECORDS=[]
 
 
 def clip_solid(vertices, faces, planes):
@@ -78,6 +83,11 @@ def trim_wall_attachment(regions):
     """
     result=defaultdict(lambda:[[],[],[]])
     for key,(vertices,faces,records) in k.GEO.items():
+        if key[0]=='Merlons':
+            # Complete merlons were already tested against the setback profile.
+            # Never create partial battlements at a wall attachment cut.
+            result[key]=[list(vertices),list(faces),list(records)]
+            continue
         for record in records:
             start=record['vertex_start'];end=start+record['vertex_count']
             local_vertices=vertices[start:end]
@@ -167,7 +177,7 @@ def wall_face(p,u,n,width,z0,z1,holes=(),depth=.30):
     k.ROLE=old_role
 
 
-def ashlar_wall(x0,x1,foundation_depth=FOUNDATION_DEPTH):
+def ashlar_wall(x0,x1,foundation_depth=FOUNDATION_DEPTH,merlon_clearance=None):
     """East-directed wall module, all visible trim inside the exact body ports."""
     k.GROUP='Foundation';k.ROLE='structure';length=x1-x0;cx=(x0+x1)/2
     k.box((cx,0,(-FOUNDATION_DEPTH+.20)/2),(length,WALL_WIDTH,FOUNDATION_DEPTH+.20),STONE,.025)
@@ -190,20 +200,28 @@ def ashlar_wall(x0,x1,foundation_depth=FOUNDATION_DEPTH):
         k.ROLE='detail';count=max(1,math.ceil(length/.63))
         for i in range(count):
             k.box((x0+(i+.5)*length/count,0,6.406),(length/count-.018,1.56,.012),STONE,.003)
-    battlements(x0,x1,0,WALL_WIDTH)
+    battlements(x0,x1,0,WALL_WIDTH,merlon_clearance=merlon_clearance)
 
 
-def battlements(x0,x1,cy,depth,p=(0,0,0),u=(1,0,0),n=(0,1,0)):
+def battlements(x0,x1,cy,depth,p=(0,0,0),u=(1,0,0),n=(0,1,0),merlon_clearance=None):
     f=frame(p,u,n);k.GROUP='Battlements';k.ROLE='structure';length=x1-x0
     for side in [-1,1]:
+        k.GROUP='Battlements'
         y=cy+side*(depth/2-.17)
         ob(f((x0+x1)/2,y,6.69),(length,.34,.58),STONE,u,n,.018)
         # Merlon rhythm is aligned to the module origin, including short links.
         for i in range(math.ceil((x0+.34)/1.30-.5),math.floor((x1-.34)/1.30-.5)+1):
             x=(i+.5)*1.30
+            footprint=[(x+dx,y+dy) for dx in [-.33,.33] for dy in [-.17,.17]]
+            clearance=min(merlon_clearance(px,py) for px,py in footprint) if merlon_clearance else math.inf
+            if clearance<MERLON_SETBACK-1e-9:continue
+            k.GROUP='Merlons'
             ob(f(x,y,7.335),(.66,.34,.71),STONE,u,n,.024)
             ob(f(x,y,7.745),(.66,.34,.11),LIGHT,u,n,.015)
+            if k.LOD=='detail':
+                MERLON_RECORDS.append({'footprint_xy_m':[[point.x,point.y] for point in [f(px,py,0) for px,py in footprint]],'minimum_facade_clearance_m':clearance})
         # Thin running cap creates a crisp, continuous crenel reveal.
+        k.GROUP='Battlements'
         ob(f((x0+x1)/2,y,6.99),(length,.34,.08),LIGHT,u,n,.012)
 
 
@@ -281,16 +299,20 @@ def arch_bridge(p=(0,0,0),u=(1,0,0),n=(0,-1,0),depth=4.76):
         for side in [-1,1]:
             ob(f(side*(r+outer)/2,out,SPRING_Z-.08),(outer-r,.075,.16),LIGHT,u,n,.01)
         ob(f(0,out,6.23),(outer*2,.07,.10),RED,u,n,.006)
-    battlements(-outer,outer,0,depth,p,u,n)
+    # Pavilion inside faces are at local X ±2.22. Preserve whole merlons
+    # between them with the same visible setback used by external wall arms.
+    battlements(-outer,outer,0,depth,p,u,n,merlon_clearance=lambda x,y:2.22-FACADE_RELIEF-abs(x))
 
 
-def wall_arm():ashlar_wall(TOWER_FACE,5.30,foundation_depth=6.50)
+def wall_arm():
+    ashlar_wall(TOWER_FACE,5.30,foundation_depth=6.50,merlon_clearance=lambda x,y:x-TOWER_FACE-FACADE_RELIEF)
 
 def wall_diagonal():
-    ashlar_wall(math.sqrt(2)*TOWER_FACE-WALL_WIDTH/2,7.60)
+    ashlar_wall(math.sqrt(2)*TOWER_FACE-WALL_WIDTH/2,7.60,merlon_clearance=lambda x,y:(x+abs(y))/math.sqrt(2)-TOWER_FACE-FACADE_RELIEF)
     trim_wall_attachment(square_attachment(TOWER_FACE))
 
-def gate_link():ashlar_wall(GATE_OUTER_FACE,5.30)
+def gate_link():
+    ashlar_wall(GATE_OUTER_FACE,5.30,merlon_clearance=lambda x,y:x-GATE_OUTER_FACE-FACADE_RELIEF)
 
 def gate_diagonal_link():
     # At the normal NS gate this SE link leaves the shallow east pavilion.
@@ -298,11 +320,11 @@ def gate_diagonal_link():
     # Both constraints are necessary: exterior south face and passage-side
     # inner edge. Their intersection removes the previously dangling wedge.
     planes=[(1,-1,math.sqrt(2)*2.43),(1,1,math.sqrt(2)*2.22)]
-    ashlar_wall((2.43+2.22)/math.sqrt(2),7.60)
+    ashlar_wall((2.43+2.22)/math.sqrt(2),7.60,merlon_clearance=lambda x,y:min((x-y)/math.sqrt(2)-2.43,(x+y)/math.sqrt(2)-2.22)-FACADE_RELIEF)
     trim_wall_attachment([planes])
 
 def gate_crossing_diagonal_link():
-    ashlar_wall(math.sqrt(2)*GATE_OUTER_FACE-WALL_WIDTH/2,7.60)
+    ashlar_wall(math.sqrt(2)*GATE_OUTER_FACE-WALL_WIDTH/2,7.60,merlon_clearance=lambda x,y:(x+abs(y))/math.sqrt(2)-GATE_OUTER_FACE-FACADE_RELIEF)
     trim_wall_attachment(square_attachment(GATE_OUTER_FACE))
 def wall_tower():pavilion(0,0,3.80,3.80)
 
@@ -338,11 +360,14 @@ ATTACHMENTS={
 
 
 def finish_asset(slug):
+    MERLON_RECORDS.clear()
     k.configure(slug);BUILDERS[slug]();k.finish(slug,rebuilder=BUILDERS[slug])
     path=k.OUT/'model.json';data=json.loads(path.read_text())
     data.update({'family':'verona_fortifications','origin_policy':'authored','authored_origin_xyz':[0,0,0],
                  'foundation_depth_m':6.50 if slug=='verona_wall_arm' else FOUNDATION_DEPTH,'walkway_height_m':WALKWAY_Z,
                  'historical_status':'Original artistic Roman typology; not an archaeological reconstruction.'})
+    if slug in PORTS or slug in ('verona_gate','verona_gate_crossing'):
+        data['merlons']={'minimum_setback_m':MERLON_SETBACK,'facade_relief_allowance_m':FACADE_RELIEF,'whole_blocks_only':True,'body_z_m':[6.98,7.69],'cap_z_m':[7.69,7.80],'low_parapet_max_z_m':7.03,'count':len(MERLON_RECORDS),'blocks':MERLON_RECORDS}
     if slug in PORTS:
         start,end=PORTS[slug];data['wall_port']={'axis':'positive_x','start_m':start,'end_m':end,'width_m':WALL_WIDTH}
         data['attachment']={**ATTACHMENTS[slug],'source_axes':'Blender X longitudinal, Y transverse, Z up','closed_end_faces':True,'interior_intrusion':False}

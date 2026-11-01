@@ -1,0 +1,138 @@
+{
+  "verona_wall_arm": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    }
+  },
+  "verona_wall_diagonal": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 20,
+      "merlon_solids_after": 16
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 20,
+      "merlon_solids_after": 16
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 20,
+      "merlon_solids_after": 16
+    }
+  },
+  "verona_wall_tower": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    }
+  },
+  "verona_gate_link": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 0,
+      "merlon_solids_after": 0
+    }
+  },
+  "verona_gate_diagonal_link": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 12,
+      "merlon_solids_after": 6
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 12,
+      "merlon_solids_after": 6
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 12,
+      "merlon_solids_after": 6
+    }
+  },
+  "verona_gate": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 8,
+      "merlon_solids_after": 8
+    }
+  },
+  "verona_gate_crossing_diagonal_link": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 4,
+      "merlon_solids_after": 0
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 4,
+      "merlon_solids_after": 0
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 4,
+      "merlon_solids_after": 0
+    }
+  },
+  "verona_gate_crossing": {
+    "detail": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 32,
+      "merlon_solids_after": 32
+    },
+    "medium": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 32,
+      "merlon_solids_after": 32
+    },
+    "far": {
+      "non_merlon_geometry_identical": true,
+      "merlon_solids_before": 32,
+      "merlon_solids_after": 32
+    }
+  }
+}
