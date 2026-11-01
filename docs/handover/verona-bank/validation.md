@@ -1,6 +1,6 @@
 # Nordbrücken-Ufer – erster Pilot
 
-Status: validiert für diesen kurzen Abschnitt. Die [angenommene Bildstudie](riverbank-concept.png) ist von den [Blender-Modellen](blender-models.png) und den echten Spielaufnahmen getrennt.
+Historischer Prüfstand des ursprünglichen Detailpilots. Der damals offene Flussfehler wird durch die anschliessende [Verona-Korridorkorrektur](../verona-river/validation.md) behandelt. Die [angenommene Bildstudie](riverbank-concept.png) ist von den [Blender-Modellen](blender-models.png) und den echten Spielaufnahmen getrennt.
 
 ## Ergebnis
 
@@ -22,7 +22,7 @@ Die Bildprüfung zeigt kleine einzelne Kieskörner auf unterbrochenen Erdfläche
 
 ## Umfang und Grenzen
 
-Es bleibt ein einzelner lokaler Pilot. Strassenränder, Plätze, das andere Ufer und weitere Flussabschnitte wurden nicht umgestaltet. Die bestehende flache Wasserdarstellung und übrige Terrainfarben sind im Bild weiterhin sichtbar. Über 7.5 km Sichtbreite, ausserhalb des Bereichs oder ohne vollständige Modelle bleibt die ursprüngliche Uferdarstellung aktiv. Es werden keine FPS-Verbesserungen behauptet; die statischen Instanzlisten benötigen keinen periodischen GPU-Readback.
+Es bleibt ein einzelner lokaler Pilot. Strassenränder, Plätze, das andere Ufer und weitere Flussabschnitte wurden nicht umgestaltet. Die bestehende, nur farblich auf Geländedreiecke gelegte Wasserdarstellung bleibt sichtbar. Sie kann quer zum Fluss geneigt sein und in Längsrichtung ansteigen. Die obigen Prüfungen decken dieses Problem nicht ab; unveränderte Geländedaten sind kein Nachweis eines korrekten Flussgefälles. Über 7.5 km Sichtbreite, ausserhalb des Bereichs oder ohne vollständige Modelle bleibt die ursprüngliche Uferdarstellung aktiv. Es werden keine FPS-Verbesserungen behauptet; die statischen Instanzlisten benötigen keinen periodischen GPU-Readback.
 
 ## Reproduktion
 

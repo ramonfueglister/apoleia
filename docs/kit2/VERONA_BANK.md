@@ -1,10 +1,10 @@
 # Verona – erster Uferabschnitt
 
-Status: validiert für den lokalen Pilot; [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
+Status: Uferdetails lokal validiert; die anschliessende [Flusskorrektur](VERONA_RIVER.md) verbindet sie mit dem korrigierten Ufer; [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
 
 ## Beobachtete Grundlage
 
-Die blaue Flussfläche folgt im nahen Renderer einer Bandfunktion über den vorhandenen Geländedreiecken. Die sichtbare trockene Uferseite stimmt daher nicht überall mit der Grenze zwischen Land- und Wasserparzellen des Stadtatlas überein. Die bestehenden Höhen und Wasserbandbreiten müssen erhalten bleiben. Parzellen mit Strassen, Brücken, Mauern oder Gebäuden sind keine freie Gestaltungsfläche.
+Die blaue Flussfläche folgt im nahen Renderer einer Bandfunktion über den vorhandenen Geländedreiecken. Die sichtbare trockene Uferseite stimmt daher nicht überall mit der Grenze zwischen Land- und Wasserparzellen des Stadtatlas überein. Für den ursprünglichen Detailpilot wurden Höhen und Wasserbandbreiten unverändert übernommen. Das validiert die Wasserhöhen nicht: Das Flussband übernimmt auch Querhänge und ansteigende Geländestücke. Diese offene Grunddarstellung muss separat korrigiert und anschliessend gemeinsam mit den Uferdetails geprüft werden. Parzellen mit Strassen, Brücken, Mauern oder Gebäuden sind keine freie Gestaltungsfläche.
 
 ## Eigene Gestaltung
 
@@ -23,3 +23,10 @@ Die lokale Kiesfarbe wird ausschliesslich im bestehenden Flussband-Zweig des Ter
 Die Höhen werden pro Meshpunkt aus der aktuellen GPU-Eckentextur und derselben Geländediagonale wie beim Boden berechnet. Das ist eine vertikale Anpassung an den vorhandenen Untergrund; die Flusssteine bekommen keine separate ebene Basis. Die Normalen berücksichtigen diese Anpassung. Alle Achsen der Ausgangsmodelle verwenden den gemeinsamen Metermassstab.
 
 Detailstufen wechseln bei 1.5 und 4 km Sichtbreite. Über 7.5 km, ausserhalb des Pilotbereichs, bei fehlenden Modellen oder unvollständiger Geländeabdeckung ist die Ergänzung deaktiviert. Es wird nichts aus dem ursprünglichen Gelände entfernt. Es gibt keine periodischen GPU-Auslesevorgänge für diese statischen Uferdetails.
+
+## Anschluss an die Flusskorrektur
+
+Seit der Korridorkorrektur verwenden die Modelle im betroffenen Bereich die gemeinsame
+Dreiecksfläche aus `verona_river.gdshaderinc`. Die ursprüngliche GPU-Eckentextur bleibt
+die unveränderte Ausgangsfläche. Die Kiesfarbe wird auf dem neuen Ufer erneut angewandt.
+Der unabhängige Kontakt- und Wasseranschlussnachweis steht im [Fluss-Prüfbericht](../handover/verona-river/validation.md).

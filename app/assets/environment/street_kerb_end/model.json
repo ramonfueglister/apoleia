@@ -1,0 +1,70 @@
+{
+  "slug": "street_kerb_end",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 44,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.3499999940395355,
+          -0.14000000059604645,
+          0.0
+        ],
+        [
+          0.3499999940395355,
+          0.14000000059604645,
+          0.1599999964237213
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 28,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.3499999940395355,
+          -0.14000000059604645,
+          0.0
+        ],
+        [
+          0.3499999940395355,
+          0.14000000059604645,
+          0.1599999964237213
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 12,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.3499999940395355,
+          -0.14000000059604645,
+          0.0
+        ],
+        [
+          0.3499999940395355,
+          0.14000000059604645,
+          0.1599999964237213
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.3499999940395355,
+      -0.14000000059604645,
+      0.0
+    ],
+    [
+      0.3499999940395355,
+      0.14000000059604645,
+      0.1599999964237213
+    ]
+  ]
+}

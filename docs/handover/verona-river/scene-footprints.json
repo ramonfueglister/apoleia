@@ -1,0 +1,2694 @@
+{
+  "status": "GPU-scene instantiated transforms; XZ AABBs conservative; bridge Y bounds exclude shader grading",
+  "buildings": [
+    {
+      "aabb_position": [
+        -670.890380859375,
+        0.600000023841858,
+        -494.365814208984
+      ],
+      "aabb_size": [
+        0.36181640625,
+        0.397697985172272,
+        0.42840576171875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          4.0
+        ],
+        "id": "capitolium",
+        "label": "Capitolium",
+        "landmark": "verona_capitolium",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue arch\u00e4ologische Rekonstruktionsbehauptung. Treppenfront nach Norden zum bestehenden Forum.",
+        "rect": [
+          18464.0,
+          6918.0,
+          2.0,
+          2.0
+        ],
+        "turns": 2.0
+      },
+      "id": "capitolium"
+    },
+    {
+      "aabb_position": [
+        -673.09033203125,
+        0.600000023841858,
+        -494.603912353516
+      ],
+      "aabb_size": [
+        0.51171875,
+        0.378093540668488,
+        0.40460205078125
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          4.0
+        ],
+        "id": "thermen",
+        "label": "Thermen",
+        "landmark": "verona_baths",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue arch\u00e4ologische Rekonstruktionsbehauptung.",
+        "rect": [
+          18455.0,
+          6917.0,
+          3.0,
+          2.0
+        ],
+        "turns": 0.0
+      },
+      "id": "thermen"
+    },
+    {
+      "aabb_position": [
+        -672.662414550781,
+        0.449999988079071,
+        -493.043182373047
+      ],
+      "aabb_size": [
+        0.6558837890625,
+        0.471716105937958,
+        0.53314208984375
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          4.0
+        ],
+        "id": "amphitheater",
+        "label": "Amphitheater",
+        "landmark": "verona_arena",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue arch\u00e4ologische Rekonstruktionsbehauptung.",
+        "rect": [
+          18457.0,
+          6923.0,
+          3.0,
+          3.0
+        ],
+        "turns": 0.0
+      },
+      "id": "amphitheater"
+    },
+    {
+      "aabb_position": [
+        -671.648620605469,
+        0.899999976158142,
+        -495.364410400391
+      ],
+      "aabb_size": [
+        0.6282958984375,
+        0.426734089851379,
+        0.425628662109375
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          4.0
+        ],
+        "id": "theater",
+        "label": "Theater",
+        "landmark": "verona_theatre",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue arch\u00e4ologische Rekonstruktionsbehauptung.",
+        "rect": [
+          18461.0,
+          6914.0,
+          3.0,
+          2.0
+        ],
+        "turns": 0.0
+      },
+      "id": "theater"
+    },
+    {
+      "aabb_position": [
+        -670.838012695312,
+        0.449999988079071,
+        -493.745513916016
+      ],
+      "aabb_size": [
+        0.257080078125,
+        0.412454009056091,
+        0.68780517578125
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          4.0
+        ],
+        "id": "basilika",
+        "label": "Basilika",
+        "landmark": "verona_basilica",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Exaktes bestehendes Wahrzeichen-Rechteck; typologisches Modell aus der Bildserie ersetzt ausschliesslich dessen Darstellung. Keine neue arch\u00e4ologische Rekonstruktionsbehauptung.",
+        "rect": [
+          18464.0,
+          6920.0,
+          2.0,
+          4.0
+        ],
+        "turns": 0.0
+      },
+      "id": "basilika"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.487500011920929,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.202538013458252,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "verona_terrace_house",
+        "label": "Haus mit Dachhof",
+        "notes": "Bestehende Wohnparzelle; Zugang und H\u00f6henbegrenzung des Stadtplans bleiben erhalten. K\u00fcnstlerische Hausvariante.",
+        "rect": [
+          18458.0,
+          6919.0,
+          1.0,
+          1.0
+        ],
+        "turns": 0.0
+      },
+      "id": "verona_terrace_house"
+    },
+    {
+      "aabb_position": [
+        -672.943969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.203251987695694,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "schmiede",
+        "label": "Schmiede",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (11, 15); Modellfront folgt der im Atlas gespeicherten Strassenseite (0). Typologische Gestaltung, Haushalts-/Simulationszuordnung unver\u00e4ndert; Taverna auf Offset (10, 13) bleibt frei.",
+        "rect": [
+          18456.0,
+          6921.0,
+          1.0,
+          1.0
+        ],
+        "turns": 2.0
+      },
+      "id": "schmiede"
+    },
+    {
+      "aabb_position": [
+        -671.693969726562,
+        0.487500011920929,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.196112036705017,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "muehle",
+        "label": "M\u00fchle",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (16, 13); Modellfront folgt der im Atlas gespeicherten Strassenseite (2). Typologische Gestaltung, Haushalts-/Simulationszuordnung unver\u00e4ndert; Taverna auf Offset (10, 13) bleibt frei. Enth\u00e4lt nur einen eigenen kleinen Wasserkanal; Flussverlauf und Br\u00fccke bleiben unver\u00e4ndert.",
+        "rect": [
+          18461.0,
+          6919.0,
+          1.0,
+          1.0
+        ],
+        "turns": 0.0
+      },
+      "id": "muehle"
+    },
+    {
+      "aabb_position": [
+        -672.190368652344,
+        0.487500011920929,
+        -494.059936523438
+      ],
+      "aabb_size": [
+        0.047607421875,
+        0.086870014667511,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18459_6919_0",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000004768372,
+          -4.11408400680102e-08
+        ],
+        "rect": [
+          18459,
+          6919,
+          1,
+          1
+        ],
+        "street_piece": "(45, 3)",
+        "turns": 3
+      },
+      "id": "verona_street_18459_6919_0"
+    },
+    {
+      "aabb_position": [
+        -672.190368652344,
+        0.462854027748108,
+        -493.977813720703
+      ],
+      "aabb_size": [
+        0.047607421875,
+        0.086870014667511,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18459_6919_1",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000004768372,
+          3.45000004768372
+        ],
+        "rect": [
+          18459,
+          6919,
+          1,
+          1
+        ],
+        "street_piece": "(53, 3)",
+        "turns": 3
+      },
+      "id": "verona_street_18459_6919_1"
+    },
+    {
+      "aabb_position": [
+        -673.117797851562,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18455_6920_0",
+        "label": "Strassenhaus",
+        "offset_m": [
+          0.0,
+          -3.45000004768372
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(44, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18455_6920_0"
+    },
+    {
+      "aabb_position": [
+        -673.117797851562,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18455_6920_1",
+        "label": "Taberna",
+        "offset_m": [
+          -3.01608594099889e-07,
+          3.45000004768372
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(46, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18455_6920_1"
+    },
+    {
+      "aabb_position": [
+        -673.035705566406,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18455_6920_2",
+        "label": "Strassenhaus",
+        "offset_m": [
+          3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(57, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18455_6920_2"
+    },
+    {
+      "aabb_position": [
+        -673.035705566406,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18455_6920_3",
+        "label": "Taberna",
+        "offset_m": [
+          3.44999980926514,
+          3.45000028610229
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(53, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18455_6920_3"
+    },
+    {
+      "aabb_position": [
+        -673.199890136719,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18455_6920_4",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000028610229,
+          3.44999980926514
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(59, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18455_6920_4"
+    },
+    {
+      "aabb_position": [
+        -673.199890136719,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18455_6920_5",
+        "label": "Strassenhaus",
+        "offset_m": [
+          -3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18455,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(50, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18455_6920_5"
+    },
+    {
+      "aabb_position": [
+        -672.867797851562,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18456_6920_0",
+        "label": "Strassenhaus",
+        "offset_m": [
+          0.0,
+          -3.45000004768372
+        ],
+        "rect": [
+          18456,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(43, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18456_6920_0"
+    },
+    {
+      "aabb_position": [
+        -672.867797851562,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18456_6920_1",
+        "label": "Taberna",
+        "offset_m": [
+          -3.01608594099889e-07,
+          3.45000004768372
+        ],
+        "rect": [
+          18456,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(47, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18456_6920_1"
+    },
+    {
+      "aabb_position": [
+        -672.949890136719,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18456_6920_2",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000028610229,
+          3.44999980926514
+        ],
+        "rect": [
+          18456,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(59, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18456_6920_2"
+    },
+    {
+      "aabb_position": [
+        -672.949890136719,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18456_6920_3",
+        "label": "Strassenhaus",
+        "offset_m": [
+          -3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18456,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(50, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18456_6920_3"
+    },
+    {
+      "aabb_position": [
+        -672.367797851562,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18458_6920_0",
+        "label": "Strassenhaus",
+        "offset_m": [
+          0.0,
+          -3.45000004768372
+        ],
+        "rect": [
+          18458,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(44, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18458_6920_0"
+    },
+    {
+      "aabb_position": [
+        -672.367797851562,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18458_6920_1",
+        "label": "Taberna",
+        "offset_m": [
+          -3.01608594099889e-07,
+          3.45000004768372
+        ],
+        "rect": [
+          18458,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(45, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18458_6920_1"
+    },
+    {
+      "aabb_position": [
+        -672.285705566406,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18458_6920_2",
+        "label": "Strassenhaus",
+        "offset_m": [
+          3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18458,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(57, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18458_6920_2"
+    },
+    {
+      "aabb_position": [
+        -672.285705566406,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18458_6920_3",
+        "label": "Taberna",
+        "offset_m": [
+          3.44999980926514,
+          3.45000028610229
+        ],
+        "rect": [
+          18458,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(52, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18458_6920_3"
+    },
+    {
+      "aabb_position": [
+        -672.035705566406,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18459_6920_0",
+        "label": "Strassenhaus",
+        "offset_m": [
+          3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18459,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(57, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18459_6920_0"
+    },
+    {
+      "aabb_position": [
+        -672.035705566406,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "f1e5d2",
+        "id": "verona_street_18459_6920_1",
+        "label": "Taberna",
+        "offset_m": [
+          3.44999980926514,
+          3.45000028610229
+        ],
+        "rect": [
+          18459,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(52, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18459_6920_1"
+    },
+    {
+      "aabb_position": [
+        -672.199890136719,
+        0.450000017881393,
+        -493.718292236328
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18459_6920_2",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000028610229,
+          3.44999980926514
+        ],
+        "rect": [
+          18459,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(58, 2)",
+        "turns": 2
+      },
+      "id": "verona_street_18459_6920_2"
+    },
+    {
+      "aabb_position": [
+        -672.199890136719,
+        0.450000017881393,
+        -493.892059326172
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.151605993509293,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_house",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18459_6920_3",
+        "label": "Strassenhaus",
+        "offset_m": [
+          -3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18459,
+          6920,
+          1,
+          1
+        ],
+        "street_piece": "(51, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18459_6920_3"
+    },
+    {
+      "aabb_position": [
+        -672.190368652344,
+        0.450000017881393,
+        -493.559936523438
+      ],
+      "aabb_size": [
+        0.047607421875,
+        0.0868699848651886,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ffffff",
+        "id": "verona_street_18459_6921_0",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000004768372,
+          -4.11408400680102e-08
+        ],
+        "rect": [
+          18459,
+          6921,
+          1,
+          1
+        ],
+        "street_piece": "(46, 3)",
+        "turns": 3
+      },
+      "id": "verona_street_18459_6921_0"
+    },
+    {
+      "aabb_position": [
+        -672.190368652344,
+        0.450000017881393,
+        -493.642059326172
+      ],
+      "aabb_size": [
+        0.047607421875,
+        0.0868699848651886,
+        0.066650390625
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18459_6921_1",
+        "label": "Taberna",
+        "offset_m": [
+          -3.45000004768372,
+          -3.45000004768372
+        ],
+        "rect": [
+          18459,
+          6921,
+          1,
+          1
+        ],
+        "street_piece": "(59, 3)",
+        "turns": 3
+      },
+      "id": "verona_street_18459_6921_1"
+    },
+    {
+      "aabb_position": [
+        -672.117797851562,
+        0.450000017881393,
+        -492.382537841797
+      ],
+      "aabb_size": [
+        0.066650390625,
+        0.0868699848651886,
+        0.047607421875
+      ],
+      "entry": {
+        "asset": "verona_street_shop",
+        "city": "verona",
+        "expected_kinds": [
+          7
+        ],
+        "facade_tint": "ead9b5",
+        "id": "verona_street_18459_6926_0",
+        "label": "Taberna",
+        "offset_m": [
+          0.0,
+          -3.45000004768372
+        ],
+        "rect": [
+          18459,
+          6926,
+          1,
+          1
+        ],
+        "street_piece": "(47, 0)",
+        "turns": 0
+      },
+      "id": "verona_street_18459_6926_0"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.284172028303146,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "insula",
+        "label": "Insula",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (13, 15); Modellfront folgt der im Atlas gespeicherten Strassenseite (1). Typologische Gestaltung, Haushalts-/Simulationszuordnung unver\u00e4ndert; Taverna auf Offset (10, 13) bleibt frei.",
+        "rect": [
+          18458.0,
+          6921.0,
+          1.0,
+          1.0
+        ],
+        "turns": 3.0
+      },
+      "id": "insula"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.5625,
+        -494.386077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.207298040390015,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "verona_townhouse",
+        "label": "Stadthaus mit Loggia",
+        "notes": "Bestehende Wohnparzelle; Zugang und H\u00f6henbegrenzung des Stadtplans bleiben erhalten. K\u00fcnstlerische Hausvariante.",
+        "rect": [
+          18460.0,
+          6918.0,
+          1.0,
+          1.0
+        ],
+        "turns": 0.0
+      },
+      "id": "verona_townhouse"
+    },
+    {
+      "aabb_position": [
+        -673.193969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.152319997549057,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "verona_courtyard_house",
+        "label": "Hofhaus mit Laden",
+        "notes": "Bestehende Wohnparzelle; Zugang und H\u00f6henbegrenzung des Stadtplans bleiben erhalten. K\u00fcnstlerische Hausvariante.",
+        "rect": [
+          18455.0,
+          6921.0,
+          1.0,
+          1.0
+        ],
+        "turns": 2.0
+      },
+      "id": "verona_courtyard_house"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.759375035762787,
+        -495.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983886241913,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18458_6913",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18458,
+          6913,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_tombs_18458_6913"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.815625011920929,
+        -495.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.157080054283142,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6913",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18460,
+          6913,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6913"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.759375035762787,
+        -495.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983886241913,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6915",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18460,
+          6915,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6915"
+    },
+    {
+      "aabb_position": [
+        -672.290893554688,
+        0.407799988985062,
+        -494.303985595703
+      ],
+      "aabb_size": [
+        0.08258056640625,
+        0.340339988470078,
+        0.05474853515625
+      ],
+      "entry": {
+        "asset": "verona_wall_arm",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6918_0",
+        "infrastructure": 8,
+        "infrastructure_piece": "(22, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_arm",
+        "rect": [
+          18458,
+          6918,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18458_6918_0"
+    },
+    {
+      "aabb_position": [
+        -672.481750488281,
+        0.514899969100952,
+        -494.271697998047
+      ],
+      "aabb_size": [
+        0.14239501953125,
+        0.233240008354187,
+        0.142333984375
+      ],
+      "entry": {
+        "asset": "verona_wall_diagonal",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6918_1",
+        "infrastructure": 8,
+        "infrastructure_piece": "(23, 5)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_diagonal",
+        "rect": [
+          18458,
+          6918,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_fort_18458_6918_1"
+    },
+    {
+      "aabb_position": [
+        -674.193969726562,
+        0.450000017881393,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18451_6919",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18451,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_tombs_18451_6919"
+    },
+    {
+      "aabb_position": [
+        -673.943969726562,
+        0.450000017881393,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18452_6919",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18452,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_tombs_18452_6919"
+    },
+    {
+      "aabb_position": [
+        -673.443969726562,
+        0.450000017881393,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18454_6919",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18454,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_tombs_18454_6919"
+    },
+    {
+      "aabb_position": [
+        -672.61181640625,
+        0.323424994945526,
+        -493.983062744141
+      ],
+      "aabb_size": [
+        0.0546875,
+        0.3403400182724,
+        0.08258056640625
+      ],
+      "entry": {
+        "asset": "verona_wall_arm",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6919_0",
+        "infrastructure": 8,
+        "infrastructure_piece": "(22, 1)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_arm",
+        "rect": [
+          18457,
+          6919,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_fort_18457_6919_0"
+    },
+    {
+      "aabb_position": [
+        -672.57958984375,
+        0.430525004863739,
+        -494.173858642578
+      ],
+      "aabb_size": [
+        0.14239501953125,
+        0.233240008354187,
+        0.142333984375
+      ],
+      "entry": {
+        "asset": "verona_wall_diagonal",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6919_1",
+        "infrastructure": 8,
+        "infrastructure_piece": "(23, 7)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_diagonal",
+        "rect": [
+          18457,
+          6919,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_fort_18457_6919_1"
+    },
+    {
+      "aabb_position": [
+        -670.443969726562,
+        0.487500011920929,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.157080054283142,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18466_6919",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18466,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_tombs_18466_6919"
+    },
+    {
+      "aabb_position": [
+        -674.443969726562,
+        0.450000017881393,
+        -493.886077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18450_6920",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18450,
+          6920,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_tombs_18450_6920"
+    },
+    {
+      "aabb_position": [
+        -670.193969726562,
+        0.450000017881393,
+        -493.886077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18467_6920",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18467,
+          6920,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18467_6920"
+    },
+    {
+      "aabb_position": [
+        -674.193969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18451_6921",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18451,
+          6921,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18451_6921"
+    },
+    {
+      "aabb_position": [
+        -673.693969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18453_6921",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18453,
+          6921,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18453_6921"
+    },
+    {
+      "aabb_position": [
+        -673.443969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18454_6921",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18454,
+          6921,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18454_6921"
+    },
+    {
+      "aabb_position": [
+        -672.61181640625,
+        0.295300006866455,
+        -493.652740478516
+      ],
+      "aabb_size": [
+        0.0546875,
+        0.3403400182724,
+        0.08258056640625
+      ],
+      "entry": {
+        "asset": "verona_wall_arm",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6921_0",
+        "infrastructure": 8,
+        "infrastructure_piece": "(22, 3)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_arm",
+        "rect": [
+          18457,
+          6921,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_fort_18457_6921_0"
+    },
+    {
+      "aabb_position": [
+        -672.57958984375,
+        0.402400016784668,
+        -493.521697998047
+      ],
+      "aabb_size": [
+        0.14239501953125,
+        0.233240008354187,
+        0.142333984375
+      ],
+      "entry": {
+        "asset": "verona_wall_diagonal",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6921_1",
+        "infrastructure": 8,
+        "infrastructure_piece": "(23, 4)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_diagonal",
+        "rect": [
+          18457,
+          6921,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18457_6921_1"
+    },
+    {
+      "aabb_position": [
+        -670.443969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18466_6921",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18466,
+          6921,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18466_6921"
+    },
+    {
+      "aabb_position": [
+        -672.290893554688,
+        0.295300006866455,
+        -493.303985595703
+      ],
+      "aabb_size": [
+        0.08258056640625,
+        0.3403400182724,
+        0.05474853515625
+      ],
+      "entry": {
+        "asset": "verona_wall_arm",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6922_0",
+        "infrastructure": 8,
+        "infrastructure_piece": "(22, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_arm",
+        "rect": [
+          18458,
+          6922,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18458_6922_0"
+    },
+    {
+      "aabb_position": [
+        -672.481750488281,
+        0.402400016784668,
+        -493.423858642578
+      ],
+      "aabb_size": [
+        0.14239501953125,
+        0.233240008354187,
+        0.142333984375
+      ],
+      "entry": {
+        "asset": "verona_wall_diagonal",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6922_1",
+        "infrastructure": 8,
+        "infrastructure_piece": "(23, 6)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_diagonal",
+        "rect": [
+          18458,
+          6922,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_fort_18458_6922_1"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.450000017881393,
+        -492.386077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18458_6926",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18458,
+          6926,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_tombs_18458_6926"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.450000017881393,
+        -492.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6927",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18460,
+          6927,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6927"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.450000017881393,
+        -491.886077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18458_6928",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18458,
+          6928,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_tombs_18458_6928"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.450000017881393,
+        -491.886077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.15708002448082,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_altar",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6928",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_altar",
+        "rect": [
+          18460,
+          6928,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6928"
+    },
+    {
+      "aabb_position": [
+        -672.193969726562,
+        0.450000017881393,
+        -491.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158983916044235,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_garden",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18459_6929",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_garden",
+        "rect": [
+          18459,
+          6929,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18459_6929"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.778125047683716,
+        -495.386077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158269941806793,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_shrine",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6914",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_shrine",
+        "rect": [
+          18460,
+          6914,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6914"
+    },
+    {
+      "aabb_position": [
+        -672.379943847656,
+        0.514899969100952,
+        -494.322052001953
+      ],
+      "aabb_size": [
+        0.0909423828125,
+        0.278318583965302,
+        0.09088134765625
+      ],
+      "entry": {
+        "asset": "verona_wall_tower",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6918_2",
+        "infrastructure": 8,
+        "infrastructure_piece": "(24, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_tower",
+        "rect": [
+          18458,
+          6918,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18458_6918_2"
+    },
+    {
+      "aabb_position": [
+        -672.210632324219,
+        0.514899969100952,
+        -494.303985595703
+      ],
+      "aabb_size": [
+        0.010009765625,
+        0.21491402387619,
+        0.05474853515625
+      ],
+      "entry": {
+        "asset": "verona_gate_link",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18459_6918_0",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_link",
+        "placement_group": "verona_gate_18459_6918",
+        "rect": [
+          18459,
+          6918,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_fort_18459_6918_0"
+    },
+    {
+      "aabb_position": [
+        -672.048461914062,
+        0.514899969100952,
+        -494.240631103516
+      ],
+      "aabb_size": [
+        0.11126708984375,
+        0.233240008354187,
+        0.11126708984375
+      ],
+      "entry": {
+        "asset": "verona_gate_diagonal_link",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18459_6918_1",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_diagonal_link",
+        "placement_group": "verona_gate_18459_6918",
+        "rect": [
+          18459,
+          6918,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18459_6918_1"
+    },
+    {
+      "aabb_position": [
+        -673.693969726562,
+        0.450000017881393,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158269912004471,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_shrine",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18453_6919",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_shrine",
+        "rect": [
+          18453,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_tombs_18453_6919"
+    },
+    {
+      "aabb_position": [
+        -672.629943847656,
+        0.430525004863739,
+        -494.072052001953
+      ],
+      "aabb_size": [
+        0.0909423828125,
+        0.278318583965302,
+        0.09088134765625
+      ],
+      "entry": {
+        "asset": "verona_wall_tower",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6919_2",
+        "infrastructure": 8,
+        "infrastructure_piece": "(24, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_tower",
+        "rect": [
+          18457,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18457_6919_2"
+    },
+    {
+      "aabb_position": [
+        -671.981750488281,
+        0.439900010824203,
+        -494.173858642578
+      ],
+      "aabb_size": [
+        0.06976318359375,
+        0.214913994073868,
+        0.06976318359375
+      ],
+      "entry": {
+        "asset": "verona_gate_crossing_diagonal_link",
+        "city": "verona",
+        "diagonal": true,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18460_6919_0",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_crossing_diagonal_link",
+        "placement_group": "verona_gate_18460_6919",
+        "rect": [
+          18460,
+          6919,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_fort_18460_6919_0"
+    },
+    {
+      "aabb_position": [
+        -672.61181640625,
+        0.402400016784668,
+        -493.902740478516
+      ],
+      "aabb_size": [
+        0.0546875,
+        0.214913964271545,
+        0.009979248046875
+      ],
+      "entry": {
+        "asset": "verona_gate_link",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18457_6920_0",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_link",
+        "placement_group": "verona_gate_18457_6920",
+        "rect": [
+          18457,
+          6920,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_fort_18457_6920_0"
+    },
+    {
+      "aabb_position": [
+        -672.61181640625,
+        0.402400016784668,
+        -493.660461425781
+      ],
+      "aabb_size": [
+        0.0546875,
+        0.214913964271545,
+        0.009979248046875
+      ],
+      "entry": {
+        "asset": "verona_gate_link",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18457_6920_1",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_link",
+        "placement_group": "verona_gate_18457_6920",
+        "rect": [
+          18457,
+          6920,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_fort_18457_6920_1"
+    },
+    {
+      "aabb_position": [
+        -673.943969726562,
+        0.450000017881393,
+        -493.636077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158269912004471,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_shrine",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18452_6921",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_shrine",
+        "rect": [
+          18452,
+          6921,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_tombs_18452_6921"
+    },
+    {
+      "aabb_position": [
+        -672.629943847656,
+        0.402400016784668,
+        -493.572052001953
+      ],
+      "aabb_size": [
+        0.0909423828125,
+        0.278318524360657,
+        0.09088134765625
+      ],
+      "entry": {
+        "asset": "verona_wall_tower",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18457_6921_2",
+        "infrastructure": 8,
+        "infrastructure_piece": "(24, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_tower",
+        "rect": [
+          18457,
+          6921,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18457_6921_2"
+    },
+    {
+      "aabb_position": [
+        -672.379943847656,
+        0.402400016784668,
+        -493.322052001953
+      ],
+      "aabb_size": [
+        0.0909423828125,
+        0.278318524360657,
+        0.09088134765625
+      ],
+      "entry": {
+        "asset": "verona_wall_tower",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          8
+        ],
+        "id": "verona_fort_18458_6922_2",
+        "infrastructure": 8,
+        "infrastructure_piece": "(24, 0)",
+        "keep_origin": true,
+        "label": "Verona: verona_wall_tower",
+        "rect": [
+          18458,
+          6922,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_fort_18458_6922_2"
+    },
+    {
+      "aabb_position": [
+        -672.210632324219,
+        0.402400016784668,
+        -493.303985595703
+      ],
+      "aabb_size": [
+        0.010009765625,
+        0.214913964271545,
+        0.05474853515625
+      ],
+      "entry": {
+        "asset": "verona_gate_link",
+        "city": "verona",
+        "diagonal": false,
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_fort_18459_6922_0",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_link",
+        "placement_group": "verona_gate_18459_6922",
+        "rect": [
+          18459,
+          6922,
+          1,
+          1
+        ],
+        "turns": 2
+      },
+      "id": "verona_fort_18459_6922_0"
+    },
+    {
+      "aabb_position": [
+        -671.943969726562,
+        0.450000017881393,
+        -492.386077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158269912004471,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_shrine",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18460_6926",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_shrine",
+        "rect": [
+          18460,
+          6926,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_tombs_18460_6926"
+    },
+    {
+      "aabb_position": [
+        -672.443969726562,
+        0.450000017881393,
+        -492.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.158269912004471,
+        0.21893310546875
+      ],
+      "entry": {
+        "asset": "verona_tombs_shrine",
+        "city": "verona",
+        "expected_kinds": [
+          11
+        ],
+        "id": "verona_tombs_18458_6927",
+        "infrastructure": 11,
+        "label": "Verona: verona_tombs_shrine",
+        "rect": [
+          18458,
+          6927,
+          1,
+          1
+        ],
+        "turns": 3
+      },
+      "id": "verona_tombs_18458_6927"
+    },
+    {
+      "aabb_position": [
+        -672.943969726562,
+        0.459375023841858,
+        -494.136077880859
+      ],
+      "aabb_size": [
+        0.218994140625,
+        0.202062010765076,
+        0.21893310546875
+      ],
+      "entry": {
+        "city": "verona",
+        "expected_kinds": [
+          1.0
+        ],
+        "id": "baeckerei",
+        "label": "B\u00e4ckerei",
+        "notes": "Gepr\u00fcft gegen artifacts/render-data/city-plans-r1/city-plans-x1.json und dessen RGB-Atlas. Freie bestehende Wohnparzelle, Offset (11, 13); Modellfront folgt der im Atlas gespeicherten Strassenseite (2). Typologische Gestaltung, Haushalts-/Simulationszuordnung unver\u00e4ndert; Taverna auf Offset (10, 13) bleibt frei.",
+        "rect": [
+          18456.0,
+          6919.0,
+          1.0,
+          1.0
+        ],
+        "turns": 0.0
+      },
+      "id": "baeckerei"
+    },
+    {
+      "aabb_position": [
+        -672.202880859375,
+        0.514899969100952,
+        -494.336730957031
+      ],
+      "aabb_size": [
+        0.23681640625,
+        0.27893602848053,
+        0.1202392578125
+      ],
+      "entry": {
+        "asset": "verona_gate",
+        "city": "verona",
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_gate_18459_6918",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate",
+        "placement_group": "verona_gate_18459_6918",
+        "rect": [
+          18459,
+          6918,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_gate_18459_6918"
+    },
+    {
+      "aabb_position": [
+        -671.952880859375,
+        0.439900010824203,
+        -494.14501953125
+      ],
+      "aabb_size": [
+        0.23681640625,
+        0.27815368771553,
+        0.23681640625
+      ],
+      "entry": {
+        "asset": "verona_gate_crossing",
+        "city": "verona",
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_gate_18460_6919",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate_crossing",
+        "placement_group": "verona_gate_18460_6919",
+        "rect": [
+          18460,
+          6919,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_gate_18460_6919"
+    },
+    {
+      "aabb_position": [
+        -672.644592285156,
+        0.402400016784668,
+        -493.895050048828
+      ],
+      "aabb_size": [
+        0.1202392578125,
+        0.27893602848053,
+        0.23687744140625
+      ],
+      "entry": {
+        "asset": "verona_gate",
+        "city": "verona",
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_gate_18457_6920",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate",
+        "placement_group": "verona_gate_18457_6920",
+        "rect": [
+          18457,
+          6920,
+          1,
+          1
+        ],
+        "turns": 1
+      },
+      "id": "verona_gate_18457_6920"
+    },
+    {
+      "aabb_position": [
+        -672.202880859375,
+        0.402400016784668,
+        -493.336730957031
+      ],
+      "aabb_size": [
+        0.23681640625,
+        0.27893602848053,
+        0.1202392578125
+      ],
+      "entry": {
+        "asset": "verona_gate",
+        "city": "verona",
+        "expected_kinds": [
+          9
+        ],
+        "id": "verona_gate_18459_6922",
+        "infrastructure": 9,
+        "keep_origin": true,
+        "label": "Verona: verona_gate",
+        "placement_group": "verona_gate_18459_6922",
+        "rect": [
+          18459,
+          6922,
+          1,
+          1
+        ],
+        "turns": 0
+      },
+      "id": "verona_gate_18459_6922"
+    }
+  ],
+  "bridges": [
+    {
+      "aabb_position": [
+        -672.155883789062,
+        0.667950034141541,
+        -495.401611328125
+      ],
+      "aabb_size": [
+        0.142822265625,
+        0.26418000459671,
+        0.25
+      ],
+      "id": "north_0"
+    },
+    {
+      "aabb_position": [
+        -672.155883789062,
+        0.627949953079224,
+        -495.151611328125
+      ],
+      "aabb_size": [
+        0.142822265625,
+        0.264180064201355,
+        0.25
+      ],
+      "id": "north_1"
+    },
+    {
+      "aabb_position": [
+        -672.155883789062,
+        0.587949991226196,
+        -494.901611328125
+      ],
+      "aabb_size": [
+        0.142822265625,
+        0.264180064201355,
+        0.25
+      ],
+      "id": "north_2"
+    },
+    {
+      "aabb_position": [
+        -672.155883789062,
+        0.367949962615967,
+        -494.651611328125
+      ],
+      "aabb_size": [
+        0.142822265625,
+        0.464180052280426,
+        0.25
+      ],
+      "id": "north_3"
+    },
+    {
+      "aabb_position": [
+        -671.95947265625,
+        0.217949986457825,
+        -493.901611328125
+      ],
+      "aabb_size": [
+        0.25,
+        0.26418000459671,
+        0.1964111328125
+      ],
+      "id": "east_0"
+    },
+    {
+      "aabb_position": [
+        -671.70947265625,
+        0.217949986457825,
+        -493.848022460938
+      ],
+      "aabb_size": [
+        0.25,
+        0.26418000459671,
+        0.142822265625
+      ],
+      "id": "east_1"
+    },
+    {
+      "aabb_position": [
+        -671.45947265625,
+        0.297949999570847,
+        -493.848022460938
+      ],
+      "aabb_size": [
+        0.25,
+        0.264180034399033,
+        0.142822265625
+      ],
+      "id": "east_2"
+    },
+    {
+      "aabb_position": [
+        -671.20947265625,
+        0.377949982881546,
+        -493.848022460938
+      ],
+      "aabb_size": [
+        0.25,
+        0.264180034399033,
+        0.142822265625
+      ],
+      "id": "east_3"
+    },
+    {
+      "aabb_position": [
+        -671.870178222656,
+        0.44047999382019,
+        -493.901611328125
+      ],
+      "aabb_size": [
+        0.0714111328125,
+        0.191650032997131,
+        0.09405517578125
+      ],
+      "id": "east_stairs"
+    }
+  ]
+}

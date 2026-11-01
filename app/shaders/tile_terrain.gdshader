@@ -7,6 +7,7 @@ render_mode skip_vertex_transform, cull_disabled, diffuse_lambert, specular_disa
 
 #include "res://shaders/tile_terrain.gdshaderinc"
 #include "res://shaders/verona_bank.gdshaderinc"
+#include "res://shaders/verona_river.gdshaderinc"
 #include "res://shaders/coast_steps.gdshaderinc"
 
 uniform vec3 light_dir = vec3(-0.6, 0.67, -0.2); // towards the sun, world
@@ -576,6 +577,7 @@ vec3 contour_land_soft(vec2 p, float band, float px_km, out int g) {
 }
 
 void fragment() {
+	if(vr_inside(world_pos.xz)) { discard; }
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
 	int ground_tip = (ground_bits >> 8) - 1;
@@ -931,6 +933,8 @@ void fragment() {
 			float aa = fwidth(d) * 1.2;
 			float bank = 1.0 - smoothstep(half_w + 0.02, half_w + 0.02 + aa, d);
 			float river = 1.0 - smoothstep(half_w, half_w + aa, d);
+			// The new surface owns the wet band; do not leave its old blue AA fringe on the high bank.
+			if(verona_river_active && vr_distance(p)<.1) {river=0.0;}
 			c = mix(c, C_BANK, bank);
 			c = mix(c, mix(C_INLAND, C_SHORE_FAR, far_share()), river);
 			// Original dry-side gravel colour only: no changed water or geometry.
