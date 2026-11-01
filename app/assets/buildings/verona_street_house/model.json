@@ -1,0 +1,62 @@
+{
+  "slug": "verona_street_house",
+  "source_bounds_xyz": [
+    [
+      -1.399999976158142,
+      -1.399999976158142,
+      0.0
+    ],
+    [
+      1.399999976158142,
+      1.399999976158142,
+      6.37000036239624
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "lods": {
+    "detail": {
+      "triangles": 14150,
+      "material_batches": 20
+    },
+    "medium": {
+      "triangles": 5208,
+      "material_batches": 19,
+      "primitive_actions": {
+        "closed_box": 375,
+        "paving_top": 25,
+        "detail_removed": 3,
+        "structural_mesh": 4,
+        "roof_tile_plane": 152,
+        "tube": 26,
+        "beam": 4,
+        "lathe": 1
+      }
+    },
+    "far": {
+      "triangles": 1578,
+      "material_batches": 8,
+      "primitive_actions": {
+        "closed_box": 114,
+        "detail_removed": 281,
+        "fine_trim_removed": 9,
+        "structural_mesh": 4,
+        "roof_tile_removed": 152,
+        "tube": 26,
+        "beam": 4
+      }
+    }
+  },
+  "design": {
+    "status": "implementiert",
+    "front": "south",
+    "height_cap_m": 6.5,
+    "footprint_cap_m": [
+      2.8,
+      2.8
+    ],
+    "placement": "existing residential or decorative street slot; no nonuniform scaling",
+    "description": "Narrow two-storey street house with full human-scale doorway",
+    "provenance": "Original procedural geometry; typological artistic infill, not a historical reconstruction"
+  }
+}

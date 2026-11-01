@@ -120,7 +120,7 @@ func _lod_sample(spec: Dictionary, building, width: float) -> Dictionary:
 	var active: int = building.active_lod
 	var rendered: int = building.rendered_lod
 	check(active in [0, 1, 2], id + ": invalid logical LOD")
-	var expected_rendered := 0 if id in DETAIL_ONLY else mini(active, 1)
+	var expected_rendered := active if building.native_lods else (0 if id in DETAIL_ONLY else mini(active, 1))
 	check(rendered == expected_rendered, id + ": runtime fallback must use the visually approved LOD")
 	check(shown.size() == 1 and shown[0] == rendered, id + ": visible child disagrees with rendered_lod")
 	var patch := Rect2(terrain.world_min + Vector2(terrain.prop_origin) * terrain.tile_km, Vector2.ONE * terrain.prop_n * terrain.tile_km)
@@ -286,7 +286,7 @@ func run() -> void:
 		return
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
 	var entries: Array = manifest.get("entries", [])
-	check(entries.size() == 19 and series.entries.size() == 19, "All 19 existing models must have validated placements")
+	check(entries.size() == 19 and series.entries.size() >= 19, "All 19 existing models must have validated placements")
 	atlas_before = _digest(terrain.plans._atlas)
 	pages_before = _digest(terrain.plans._pages)
 	# Preserve both occupied cells and the complete ring of surrounding parcels.
@@ -310,7 +310,8 @@ func run() -> void:
 	var pages_after := _digest(terrain.plans._pages)
 	check(atlas_after == atlas_before and pages_after == pages_before, "Complete city atlas and page mapping must remain byte-for-byte unchanged")
 	check(series.failures.is_empty(), "Series loader failures: " + str(series.failures))
-	check(series.instances.size() == 19, "All 19 threaded models must be installed by the end of the tour")
+	for spec: Dictionary in entries:
+		check(series.instances.has(spec.id), "Base model missing after tour: " + String(spec.id))
 	report["atlas_sha256_after"] = atlas_after
 	report["pages_sha256_after"] = pages_after
 	report["installed_models"] = series.instances.keys()

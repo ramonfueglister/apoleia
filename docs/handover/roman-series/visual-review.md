@@ -1,5 +1,7 @@
 # Roman series visual review — 2026-11-01
 
+> Historical review of the first export/integration. The rejected global-decimation LODs and temporary runtime fallback described below have since been replaced by visually approved `shape_preserving_v1` assets. See [Verona city visual QA](../verona-city/visual-review.md) for the current verdict. Medium/far screenshot paths below now contain the corrected native LODs; they are no longer evidence of the historical rejected export. Detail/front/rear findings remain applicable.
+
 All 19 new GLBs were rendered in an isolated Godot 4.7.2 project at 900 × 900 pixels with an orthographic camera, warm neutral directional/ambient lighting, ground shadows and SSAO. Actual exported geometry and embedded materials were used; these are screenshots, not concept illustrations. Taverna was neither changed nor re-exported.
 
 Every front detail image was inspected individually. Opposite rear detail views and medium views were inspected in six-image contact sheets. Corrected models were rendered and inspected again. All 19 preview GLB snapshots matched the corresponding application GLBs by SHA-256 at the end of this review.

@@ -144,3 +144,7 @@ nur als ausdrücklich übergebene lokale Vergleichsdatei geladen:
 git show 026d3db:app/scripts/voxel/verona_landmarks.gd > /tmp/verona-before.gd
 /Applications/Godot.app/Contents/MacOS/Godot --path app --script res://scripts/debug/verona_preview.gd -- --compare=theatre --before-code=/tmp/verona-before.gd --out=/absolute/path/theatre-compare.png
 ```
+
+## Wohnviertel und Detailstufen
+
+Die weitere Vereinheitlichung der acht Wohnparzellen und 23 Strassenhäuser ist in [VERONA_CITY.md](VERONA_CITY.md) dokumentiert. Die bestehenden öffentlichen Plätze, Mauern und Verkehrswege bleiben erhalten.

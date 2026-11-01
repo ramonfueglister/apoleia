@@ -13,18 +13,41 @@
     ]
   ],
   "metres": true,
+  "lod_method": "shape_preserving_v1",
   "lods": {
     "detail": {
       "triangles": 76196,
       "material_batches": 18
     },
     "medium": {
-      "triangles": 15145,
-      "material_batches": 18
+      "triangles": 15452,
+      "material_batches": 18,
+      "primitive_actions": {
+        "closed_box": 305,
+        "structural_mesh": 485,
+        "paving_top": 448,
+        "lathe": 46,
+        "roof_tile_plane": 1490,
+        "tube": 5,
+        "beam": 34
+      }
     },
     "far": {
-      "triangles": 2478,
-      "material_batches": 18
+      "triangles": 10518,
+      "material_batches": 13,
+      "primitive_actions": {
+        "closed_box": 225,
+        "structural_mesh": 449,
+        "paving_top": 448,
+        "lathe": 46,
+        "fine_trim_removed": 80,
+        "roof_tile_removed": 1490,
+        "tube": 1,
+        "beam": 32,
+        "fine_beam_removed": 2,
+        "fine_tube_removed": 4,
+        "relief_removed": 36
+      }
     }
   }
 }

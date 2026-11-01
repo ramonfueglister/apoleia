@@ -1,0 +1,63 @@
+{
+  "slug": "verona_terrace_house",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      8.510000228881836
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "lods": {
+    "detail": {
+      "triangles": 68798,
+      "material_batches": 28
+    },
+    "medium": {
+      "triangles": 22844,
+      "material_batches": 26,
+      "primitive_actions": {
+        "closed_box": 1566,
+        "paving_top": 324,
+        "beam": 25,
+        "detail_removed": 2,
+        "structural_mesh": 18,
+        "roof_tile_plane": 836,
+        "tube": 133,
+        "lathe": 2
+      }
+    },
+    "far": {
+      "triangles": 6432,
+      "material_batches": 14,
+      "primitive_actions": {
+        "closed_box": 444,
+        "detail_removed": 1419,
+        "fine_trim_removed": 42,
+        "structural_mesh": 12,
+        "roof_tile_removed": 836,
+        "tube": 129,
+        "beam": 23,
+        "lathe": 1
+      }
+    }
+  },
+  "design": {
+    "status": "implementiert",
+    "front": "south",
+    "height_cap_m": 9.0,
+    "footprint_cap_m": [
+      9.2,
+      9.2
+    ],
+    "placement": "existing residential or decorative street slot; no nonuniform scaling",
+    "description": "Two-storey lightwell house with roof terrace, pergola and three tiled wings",
+    "provenance": "Original procedural geometry; typological artistic infill, not a historical reconstruction"
+  }
+}

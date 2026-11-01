@@ -1,0 +1,52 @@
+{
+  "entries": [
+    {
+      "id": "verona_townhouse",
+      "city": "verona",
+      "label": "Stadthaus mit Loggia",
+      "rect": [
+        18460,
+        6918,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Bestehende Wohnparzelle; Zugang und Höhenbegrenzung des Stadtplans bleiben erhalten. Künstlerische Hausvariante."
+    },
+    {
+      "id": "verona_terrace_house",
+      "city": "verona",
+      "label": "Haus mit Dachhof",
+      "rect": [
+        18458,
+        6919,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 0,
+      "notes": "Bestehende Wohnparzelle; Zugang und Höhenbegrenzung des Stadtplans bleiben erhalten. Künstlerische Hausvariante."
+    },
+    {
+      "id": "verona_courtyard_house",
+      "city": "verona",
+      "label": "Hofhaus mit Laden",
+      "rect": [
+        18455,
+        6921,
+        1,
+        1
+      ],
+      "expected_kinds": [
+        1
+      ],
+      "turns": 2,
+      "notes": "Bestehende Wohnparzelle; Zugang und Höhenbegrenzung des Stadtplans bleiben erhalten. Künstlerische Hausvariante."
+    }
+  ]
+}

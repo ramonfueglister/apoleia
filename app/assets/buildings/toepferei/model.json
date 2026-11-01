@@ -13,18 +13,42 @@
     ]
   ],
   "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "detail_topology": "legacy_weld_1um",
   "lods": {
     "detail": {
       "triangles": 80813,
       "material_batches": 27
     },
     "medium": {
-      "triangles": 15497,
-      "material_batches": 27
+      "triangles": 18831,
+      "material_batches": 27,
+      "primitive_actions": {
+        "closed_box": 182,
+        "paving_top": 676,
+        "lathe": 76,
+        "structural_mesh": 213,
+        "roof_tile_plane": 2496,
+        "tube": 230,
+        "beam": 16,
+        "relief_removed": 35
+      }
     },
     "far": {
-      "triangles": 3248,
-      "material_batches": 27
+      "triangles": 6515,
+      "material_batches": 19,
+      "primitive_actions": {
+        "closed_box": 86,
+        "paving_top": 676,
+        "lathe": 76,
+        "structural_mesh": 41,
+        "roof_tile_removed": 2496,
+        "tube": 215,
+        "beam": 16,
+        "fine_trim_removed": 96,
+        "fine_tube_removed": 15,
+        "relief_removed": 207
+      }
     }
   }
 }
