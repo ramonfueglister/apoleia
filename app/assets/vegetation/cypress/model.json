@@ -1,0 +1,70 @@
+{
+  "slug": "cypress",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 1152,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.7393748164176941,
+          -0.7906551957130432,
+          0.0
+        ],
+        [
+          0.8326565623283386,
+          0.7383551001548767,
+          8.0
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 280,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.6877647638320923,
+          -0.718396008014679,
+          0.0
+        ],
+        [
+          0.8326565623283386,
+          0.6908863186836243,
+          8.0
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 100,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.7384663224220276,
+          -0.6330328583717346,
+          0.0
+        ],
+        [
+          0.8326565623283386,
+          0.7230463027954102,
+          8.0
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.7393748164176941,
+      -0.7906551957130432,
+      0.0
+    ],
+    [
+      0.8326565623283386,
+      0.7383551001548767,
+      8.0
+    ]
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "slug": "stone_pine",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 2190,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -4.101568698883057,
+          -3.8394265174865723,
+          0.0
+        ],
+        [
+          4.135477542877197,
+          3.7849926948547363,
+          7.946178913116455
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 1018,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -4.101566791534424,
+          -3.839409351348877,
+          0.0
+        ],
+        [
+          4.1354756355285645,
+          3.5512595176696777,
+          7.946178913116455
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 392,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -4.101566791534424,
+          -3.839409351348877,
+          0.0
+        ],
+        [
+          4.1354756355285645,
+          3.5512595176696777,
+          7.946178913116455
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -4.101568698883057,
+      -3.8394265174865723,
+      0.0
+    ],
+    [
+      4.135477542877197,
+      3.7849926948547363,
+      7.946178913116455
+    ]
+  ]
+}

@@ -1,0 +1,81 @@
+{
+	"assertions": 578,
+	"cases": [
+		{
+			"missing_asset": "oak",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "shrub",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "cypress",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "stone_pine",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "olive",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "willow",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "reeds",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		},
+		{
+			"missing_asset": "courtyard_planter",
+			"states_checked": [
+				"missing",
+				"restored",
+				"far",
+				"return"
+			]
+		}
+	],
+	"completed_states": 32,
+	"failures": [],
+	"scope": "Injected loaded-state failures; no filesystem mutation or loader transport test",
+	"test": "verona_vegetation_activation_fallback"
+}

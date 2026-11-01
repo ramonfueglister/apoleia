@@ -1,0 +1,70 @@
+{
+  "slug": "oak",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 1736,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.6377410888671875,
+          -3.603541851043701,
+          0.0
+        ],
+        [
+          3.597454309463501,
+          3.4839565753936768,
+          8.056020736694336
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 752,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.394728422164917,
+          -3.306068181991577,
+          0.0
+        ],
+        [
+          3.297333240509033,
+          3.1191065311431885,
+          8.056020736694336
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 336,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.394728422164917,
+          -3.306068181991577,
+          0.0
+        ],
+        [
+          3.297333240509033,
+          3.1191065311431885,
+          8.056020736694336
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -3.6377410888671875,
+      -3.603541851043701,
+      0.0
+    ],
+    [
+      3.597454309463501,
+      3.4839565753936768,
+      8.056020736694336
+    ]
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "slug": "reeds",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 1188,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.9231194257736206,
+          -0.9199880361557007,
+          0.0
+        ],
+        [
+          0.933262288570404,
+          0.91688072681427,
+          1.6008384227752686
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 948,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.9231194257736206,
+          -0.9199880361557007,
+          0.0
+        ],
+        [
+          0.9076957702636719,
+          0.91688072681427,
+          1.6008384227752686
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 696,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.9231194257736206,
+          -0.9199880361557007,
+          0.0
+        ],
+        [
+          0.9076957702636719,
+          0.91688072681427,
+          1.6008384227752686
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.9231194257736206,
+      -0.9199880361557007,
+      0.0
+    ],
+    [
+      0.933262288570404,
+      0.91688072681427,
+      1.6008384227752686
+    ]
+  ]
+}

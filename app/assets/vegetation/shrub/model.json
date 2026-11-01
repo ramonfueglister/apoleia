@@ -1,0 +1,70 @@
+{
+  "slug": "shrub",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 850,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.8957760334014893,
+          -0.9121039509773254,
+          0.0
+        ],
+        [
+          0.9462058544158936,
+          0.9156319499015808,
+          1.422683835029602
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 250,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.824331521987915,
+          -0.8372232913970947,
+          0.0
+        ],
+        [
+          0.9252371788024902,
+          0.8352871537208557,
+          1.422683835029602
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 220,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.824331521987915,
+          -0.8372232913970947,
+          0.0
+        ],
+        [
+          0.9252371788024902,
+          0.8352871537208557,
+          1.422683835029602
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.8957760334014893,
+      -0.9121039509773254,
+      0.0
+    ],
+    [
+      0.9462058544158936,
+      0.9156319499015808,
+      1.422683835029602
+    ]
+  ]
+}

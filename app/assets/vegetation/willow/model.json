@@ -1,0 +1,70 @@
+{
+  "slug": "willow",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 3198,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.369555711746216,
+          -2.9561502933502197,
+          0.0
+        ],
+        [
+          3.2349188327789307,
+          3.198627233505249,
+          7.808152675628662
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 1102,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.3563272953033447,
+          -2.9069786071777344,
+          0.0
+        ],
+        [
+          3.1462595462799072,
+          3.0685224533081055,
+          7.808152675628662
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 696,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -3.3563272953033447,
+          -2.9069786071777344,
+          0.0
+        ],
+        [
+          3.078226089477539,
+          2.858006715774536,
+          7.808152675628662
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -3.369555711746216,
+      -2.9561502933502197,
+      0.0
+    ],
+    [
+      3.2349188327789307,
+      3.198627233505249,
+      7.808152675628662
+    ]
+  ]
+}
