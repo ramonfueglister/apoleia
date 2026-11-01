@@ -9,6 +9,9 @@ var entries: Array[Dictionary] = []
 var instances: Dictionary = {}
 var reserved: Dictionary = {}
 var street_reserved: Dictionary = {}
+var infrastructure_reserved: Dictionary = {}
+var placement_groups: Dictionary = {}
+var ready_groups: Dictionary = {}
 var failures: Array[String] = []
 var _pending := {}
 var _loaded := {}
@@ -29,6 +32,7 @@ func setup(terrain) -> void:
 			for spec: Dictionary in data.get("entries", []):
 				_register(spec)
 	_add_verona_streets()
+	_add_verona_fortifications()
 
 func _register(spec: Dictionary) -> void:
 	if _rects.has(spec.id) or not _valid_site(spec):
@@ -36,6 +40,11 @@ func _register(spec: Dictionary) -> void:
 		push_warning(failures[-1])
 		return
 	entries.append(spec)
+	if spec.has("placement_group"):
+		var group: String = spec.placement_group
+		if not placement_groups.has(group):
+			placement_groups[group] = []
+		placement_groups[group].append(spec.id)
 	var r: Array = spec.rect
 	_rects[spec.id] = Rect2(_terrain.world_min + Vector2(r[0], r[1]) * _terrain.plans.parcel_km, Vector2(r[2], r[3]) * _terrain.plans.parcel_km)
 
@@ -62,6 +71,72 @@ func _add_verona_streets() -> void:
 				var offset := Vector2(0 if kind == "street_row" else -3.45 if kind == "street_corner_w" else 3.45, -3.45)
 				offset = offset.rotated(piece.y * PI * 0.5)
 				_register({"id": "verona_street_%d_%d_%d" % [x, y, i], "asset": "verona_street_shop" if low else "verona_street_house", "city": "verona", "label": "Taberna" if low else "Strassenhaus", "rect": [x, y, 1, 1], "expected_kinds": [7], "turns": piece.y, "street_piece": piece, "offset_m": [offset.x, offset.y], "facade_tint": ["ffffff", "ead9b5", "f1e5d2"][(x * 31 + y * 17 + i) % 3]})
+
+func _infrastructure_spec(id: String, asset: String, parcel: Vector2i, kind: int) -> Dictionary:
+	return {"id": id, "asset": asset, "city": "verona", "label": "Verona: " + asset, "rect": [parcel.x, parcel.y, 1, 1], "expected_kinds": [kind], "turns": 0, "infrastructure": kind}
+
+func _add_verona_fortifications() -> void:
+	if not _terrain.plans.info.cities.has("verona"):
+		return
+	var city: Dictionary = _terrain.plans.info.cities.verona
+	for y in range(int(city.origin[1]), int(city.origin[1] + city.size[1])):
+		for x in range(int(city.origin[0]), int(city.origin[0] + city.size[0])):
+			var parcel := Vector2i(x, y)
+			var texel: Vector3i = _terrain.plans.texel(parcel)
+			if texel.x == 11:
+				var asset: String = ["verona_tombs_altar", "verona_tombs_shrine", "verona_tombs_garden"][(x * 17 + y * 31) % 3]
+				var spec := _infrastructure_spec("verona_tombs_%d_%d" % [x, y], asset, parcel, 11)
+				spec.turns = posmod((texel.z >> 6) - 2, 4)
+				_register(spec)
+			elif texel.x in [8, 9]:
+				var gate := texel.x == 9
+				var group := "verona_gate_%d_%d" % [x, y]
+				if gate:
+					var links := texel.y >> 4
+					var crossing := (links & 5) != 0 and (links & 10) != 0
+					var spec := _infrastructure_spec(group, "verona_gate_crossing" if crossing else "verona_gate", parcel, 9)
+					spec.turns = 0 if crossing or (links & 5) != 0 else 1
+					spec.keep_origin = true
+					spec.placement_group = group
+					_register(spec)
+				# Match the existing cardinal/diagonal neighbour rules at BOTH
+				# walls and gates. This also joins adjacent diagonal gate cells.
+				var pieces: Array = _terrain._plan_wall(parcel, absi(hash(parcel)))
+				for i in pieces.size():
+					var piece: Vector2i = pieces[i]
+					var variant: int = _terrain.LOT_KINDS[piece.x][1]
+					if gate and variant == 2:
+						continue
+					var asset: String = ["verona_gate_link", "verona_gate_diagonal_link"][variant] if gate else ["verona_wall_arm", "verona_wall_diagonal", "verona_wall_tower"][variant]
+					var spec := _infrastructure_spec("verona_fort_%d_%d_%d" % [x, y, i], asset, parcel, texel.x)
+					spec.turns = piece.y % 4
+					spec.diagonal = piece.y >= 4
+					spec.keep_origin = true
+					if gate:
+						spec.placement_group = group
+					else:
+						spec.infrastructure_piece = piece
+					_register(spec)
+
+func filter_infrastructure_lots(parcel: Vector2i, original: Array) -> Array:
+	if not infrastructure_reserved.has(parcel):
+		return original
+	return original.filter(func(piece: Vector2i) -> bool: return not infrastructure_reserved[parcel].has(piece))
+
+func _refresh_groups() -> void:
+	# Commit a whole gate assembly on the next view update, after every part
+	# has installed: partial new geometry never hides the old complete gate.
+	for group: String in placement_groups:
+		if ready_groups.has(group):
+			continue
+		var complete := true
+		for id: String in placement_groups[group]:
+			complete = complete and instances.has(id)
+		if complete:
+			ready_groups[group] = true
+			var rect: Array = instances[group].entry.rect
+			reserved[Vector2i(rect[0], rect[1])] = group
+			_terrain._town_key = Vector4i(-1, 0, 0, 0)
 
 func _valid_site(spec: Dictionary) -> bool:
 	if not _terrain.plans.info.cities.has(spec.city):
@@ -129,7 +204,14 @@ func _install(spec: Dictionary) -> void:
 	building.visible = false
 	instances[spec.id] = building
 	var r: Array = spec.rect
-	if spec.has("street_piece"):
+	if spec.has("placement_group"):
+		pass # activated atomically by _refresh_groups
+	elif spec.has("infrastructure_piece"):
+		var parcel := Vector2i(r[0], r[1])
+		if not infrastructure_reserved.has(parcel):
+			infrastructure_reserved[parcel] = {}
+		infrastructure_reserved[parcel][spec.infrastructure_piece] = spec.id
+	elif spec.has("street_piece"):
 		var parcel := Vector2i(r[0], r[1])
 		if not street_reserved.has(parcel):
 			street_reserved[parcel] = {}
@@ -143,6 +225,7 @@ func _install(spec: Dictionary) -> void:
 func update_view(width: float, patch: Rect2) -> void:
 	materials.clear()
 	_poll_resources()
+	_refresh_groups()
 	for spec in entries:
 		var rect: Rect2 = _rects[spec.id]
 		var near: bool = _terrain.level <= (1 if spec.has("landmark") else 0)
@@ -154,6 +237,8 @@ func update_view(width: float, patch: Rect2) -> void:
 		if not instances.has(spec.id):
 			continue
 		var building = instances[spec.id]
+		if spec.has("placement_group") and not ready_groups.has(spec.placement_group):
+			visible_here = false
 		if visible_here and not _active.get(spec.id, false):
 			building.sync_uniforms(_terrain._terrain_material)
 		_active[spec.id] = visible_here

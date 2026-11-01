@@ -1,0 +1,12 @@
+{
+  "source": "build/verona-city/final",
+  "purpose": "Accepted residential/street Verona state before fortifications",
+  "sha256": {
+    "report.json": "ef304be403bb2ba3c8aa5ee1bb650b0fc917607438e752d624240cdd207a7a29",
+    "width-12.0.png": "8d025d31073d0e14e55b2d7ea198ad0846f60f017cda4db66bebd3edce10b015",
+    "width-60.0.png": "15060d6d5acfe06bbadbe80a509e971d78786f5326f7a188b116864ad53e3b79",
+    "width-1.5.png": "1b6306373fa1f4d4434e7534235dcc2b66fa8387608dc88e232dd0a6489f0e45",
+    "width-24.0.png": "71b5c41378f90a1d7456cb9faeaa814c589e62f75a48d9e100b2abee259fe97d",
+    "width-5.0.png": "e030d90715816a334bacbca08c496569230db4940cc1232d1aa4c6a6e3f3e96c"
+  }
+}

@@ -1,0 +1,1871 @@
+{
+	"atlas_sha256_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_sha256_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"elapsed_seconds": 24.526,
+	"failures": [],
+	"game_frames": 1175,
+	"installed_models": [
+		"capitolium",
+		"amphitheater",
+		"thermen",
+		"basilika",
+		"schmiede",
+		"muehle",
+		"verona_townhouse",
+		"insula",
+		"verona_street_18459_6919_0",
+		"verona_street_18459_6919_1",
+		"verona_street_18455_6920_1",
+		"verona_street_18455_6920_3",
+		"verona_street_18455_6920_4",
+		"verona_street_18456_6920_1",
+		"verona_street_18456_6920_2",
+		"verona_street_18458_6920_1",
+		"verona_street_18458_6920_3",
+		"verona_street_18459_6920_1",
+		"verona_street_18459_6920_2",
+		"verona_street_18459_6921_0",
+		"verona_street_18459_6921_1",
+		"verona_street_18459_6926_0",
+		"baeckerei",
+		"verona_terrace_house",
+		"verona_courtyard_house",
+		"verona_tombs_18460_6915",
+		"verona_fort_18458_6918_0",
+		"verona_fort_18458_6918_1",
+		"verona_tombs_18452_6919",
+		"verona_fort_18457_6919_0",
+		"verona_fort_18457_6919_1",
+		"verona_tombs_18451_6921",
+		"verona_tombs_18454_6921",
+		"verona_fort_18457_6921_0",
+		"verona_fort_18457_6921_1",
+		"verona_tombs_18466_6921",
+		"verona_fort_18458_6922_0",
+		"verona_fort_18458_6922_1",
+		"verona_tombs_18460_6927",
+		"verona_tombs_18458_6928",
+		"verona_tombs_18459_6929",
+		"theater",
+		"verona_street_18455_6920_0",
+		"verona_street_18455_6920_2",
+		"verona_street_18455_6920_5",
+		"verona_street_18456_6920_0",
+		"verona_street_18456_6920_3",
+		"verona_street_18458_6920_0",
+		"verona_street_18458_6920_2",
+		"verona_street_18459_6920_0",
+		"verona_street_18459_6920_3",
+		"verona_fort_18458_6918_2",
+		"verona_gate_18459_6918",
+		"verona_fort_18459_6918_0",
+		"verona_fort_18459_6918_1",
+		"verona_tombs_18451_6919",
+		"verona_tombs_18453_6919",
+		"verona_tombs_18454_6919",
+		"verona_fort_18457_6919_2",
+		"verona_fort_18460_6919_0",
+		"verona_tombs_18466_6919",
+		"verona_gate_18457_6920",
+		"verona_fort_18457_6920_0",
+		"verona_fort_18457_6920_1",
+		"verona_tombs_18452_6921",
+		"verona_tombs_18453_6921",
+		"verona_fort_18457_6921_2",
+		"verona_fort_18458_6922_2",
+		"verona_gate_18459_6922",
+		"verona_fort_18459_6922_0",
+		"verona_tombs_18458_6926",
+		"verona_tombs_18460_6926",
+		"verona_tombs_18458_6927",
+		"verona_tombs_18460_6928",
+		"verona_tombs_18458_6913",
+		"verona_tombs_18460_6913",
+		"verona_tombs_18460_6914",
+		"verona_gate_18460_6919",
+		"verona_tombs_18450_6920",
+		"verona_tombs_18467_6920",
+		"curia",
+		"domus",
+		"stadttor",
+		"villa_rustica",
+		"toepferei",
+		"macellum",
+		"bibliothek",
+		"leuchtturm",
+		"horreum",
+		"rundtempel"
+	],
+	"loader_failures": [],
+	"models": [
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.6558837890625,
+				0.471716105937958,
+				0.53314208984375
+			],
+			"city": "verona",
+			"end_frame": 68,
+			"fit": 1.0,
+			"id": "amphitheater",
+			"load_and_settle_ms": 366,
+			"materials": {
+				"authored_batches": 13,
+				"checked_surfaces": 38,
+				"runtime_materials": 13,
+				"textured_batches": 6
+			},
+			"rect_km": [
+				-672.70947265625,
+				-493.151611328125,
+				0.75,
+				0.75
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/amphitheater.png",
+			"start_frame": 5,
+			"visit_ms": 1459,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 9.64565868377686
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 23.4251710891724
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.6282958984375,
+				0.426734089851379,
+				0.425628662109375
+			],
+			"city": "verona",
+			"end_frame": 124,
+			"fit": 1.0,
+			"id": "theater",
+			"load_and_settle_ms": 164,
+			"materials": {
+				"authored_batches": 18,
+				"checked_surfaces": 50,
+				"runtime_materials": 18,
+				"textured_batches": 6
+			},
+			"rect_km": [
+				-671.70947265625,
+				-495.401611328125,
+				0.75,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/theater.png",
+			"start_frame": 68,
+			"visit_ms": 1174,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 9.2399998664856
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 22.4399996757507
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.36181640625,
+				0.397697985172272,
+				0.42840576171875
+			],
+			"city": "verona",
+			"end_frame": 180,
+			"fit": 1.0,
+			"id": "capitolium",
+			"load_and_settle_ms": 150,
+			"materials": {
+				"authored_batches": 16,
+				"checked_surfaces": 44,
+				"runtime_materials": 16,
+				"textured_batches": 5
+			},
+			"rect_km": [
+				-670.95947265625,
+				-494.401611328125,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/capitolium.png",
+			"start_frame": 124,
+			"visit_ms": 1092,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.3
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 15.3
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.51171875,
+				0.378093540668488,
+				0.40460205078125
+			],
+			"city": "verona",
+			"end_frame": 236,
+			"fit": 1.0,
+			"id": "thermen",
+			"load_and_settle_ms": 190,
+			"materials": {
+				"authored_batches": 19,
+				"checked_surfaces": 53,
+				"runtime_materials": 19,
+				"textured_batches": 6
+			},
+			"rect_km": [
+				-673.20947265625,
+				-494.651611328125,
+				0.75,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/thermen.png",
+			"start_frame": 180,
+			"visit_ms": 1193,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 7.525
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 18.275
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.257080078125,
+				0.412454009056091,
+				0.68780517578125
+			],
+			"city": "verona",
+			"end_frame": 292,
+			"fit": 1.0,
+			"id": "basilika",
+			"load_and_settle_ms": 184,
+			"materials": {
+				"authored_batches": 16,
+				"checked_surfaces": 43,
+				"runtime_materials": 16,
+				"textured_batches": 5
+			},
+			"rect_km": [
+				-670.95947265625,
+				-493.901611328125,
+				0.5,
+				1.0
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/basilika.png",
+			"start_frame": 236,
+			"visit_ms": 1175,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 2.4
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 10.1149998664856
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 24.5649996757507
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 2.4
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.218994140625,
+				0.202062010765076,
+				0.21893310546875
+			],
+			"city": "verona",
+			"end_frame": 348,
+			"fit": 1.0,
+			"id": "baeckerei",
+			"load_and_settle_ms": 174,
+			"materials": {
+				"authored_batches": 29,
+				"checked_surfaces": 75,
+				"runtime_materials": 29,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				-672.95947265625,
+				-494.151611328125,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/baeckerei.png",
+			"start_frame": 292,
+			"visit_ms": 1130,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.218994140625,
+				0.203251987695694,
+				0.21893310546875
+			],
+			"city": "verona",
+			"end_frame": 404,
+			"fit": 1.0,
+			"id": "schmiede",
+			"load_and_settle_ms": 181,
+			"materials": {
+				"authored_batches": 27,
+				"checked_surfaces": 72,
+				"runtime_materials": 27,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				-672.95947265625,
+				-493.651611328125,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/schmiede.png",
+			"start_frame": 348,
+			"visit_ms": 1095,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.218994140625,
+				0.284172028303146,
+				0.21893310546875
+			],
+			"city": "verona",
+			"end_frame": 460,
+			"fit": 1.0,
+			"id": "insula",
+			"load_and_settle_ms": 163,
+			"materials": {
+				"authored_batches": 26,
+				"checked_surfaces": 69,
+				"runtime_materials": 26,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				-672.45947265625,
+				-493.651611328125,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/insula.png",
+			"start_frame": 404,
+			"visit_ms": 1131,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.218994140625,
+				0.196112036705017,
+				0.21893310546875
+			],
+			"city": "verona",
+			"end_frame": 516,
+			"fit": 1.0,
+			"id": "muehle",
+			"load_and_settle_ms": 163,
+			"materials": {
+				"authored_batches": 26,
+				"checked_surfaces": 68,
+				"runtime_materials": 26,
+				"textured_batches": 7
+			},
+			"rect_km": [
+				-671.70947265625,
+				-494.151611328125,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/muehle.png",
+			"start_frame": 460,
+			"visit_ms": 1073,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.423583984375,
+				0.125426054000854,
+				0.423583984375
+			],
+			"city": "trier",
+			"end_frame": 588,
+			"fit": 1.0,
+			"id": "domus",
+			"load_and_settle_ms": 258,
+			"materials": {
+				"authored_batches": 27,
+				"checked_surfaces": 71,
+				"runtime_materials": 28,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				-1038.20947265625,
+				-972.651611328125,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/domus.png",
+			"start_frame": 516,
+			"visit_ms": 891,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.22999973297119
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 15.1299993515015
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.423583984375,
+				0.183735996484756,
+				0.423583984375
+			],
+			"city": "alexandria",
+			"end_frame": 663,
+			"fit": 1.0,
+			"id": "villa_rustica",
+			"load_and_settle_ms": 294,
+			"materials": {
+				"authored_batches": 28,
+				"checked_surfaces": 74,
+				"runtime_materials": 29,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				917.04052734375,
+				1089.59838867188,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/villa_rustica.png",
+			"start_frame": 588,
+			"visit_ms": 987,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.22999973297119
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 15.1299993515015
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.423583984375,
+				0.140419989824295,
+				0.423583984375
+			],
+			"city": "alexandria",
+			"end_frame": 719,
+			"fit": 1.0,
+			"id": "toepferei",
+			"load_and_settle_ms": 129,
+			"materials": {
+				"authored_batches": 27,
+				"checked_surfaces": 73,
+				"runtime_materials": 28,
+				"textured_batches": 8
+			},
+			"rect_km": [
+				915.29052734375,
+				1090.34838867188,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/toepferei.png",
+			"start_frame": 663,
+			"visit_ms": 787,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.22999973297119
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 15.1299993515015
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.6663818359375,
+				0.236672639846802,
+				0.594970703125
+			],
+			"city": "alexandria",
+			"end_frame": 775,
+			"fit": 1.0,
+			"id": "macellum",
+			"load_and_settle_ms": 119,
+			"materials": {
+				"authored_batches": 22,
+				"checked_surfaces": 61,
+				"runtime_materials": 23,
+				"textured_batches": 9
+			},
+			"rect_km": [
+				915.79052734375,
+				1088.59838867188,
+				0.75,
+				0.75
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/macellum.png",
+			"start_frame": 719,
+			"visit_ms": 791,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 9.8
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 23.8
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.469970703125,
+				0.371098130941391,
+				0.42724609375
+			],
+			"city": "alexandria",
+			"end_frame": 831,
+			"fit": 0.897631779984721,
+			"id": "bibliothek",
+			"load_and_settle_ms": 133,
+			"materials": {
+				"authored_batches": 19,
+				"checked_surfaces": 53,
+				"runtime_materials": 20,
+				"textured_batches": 6
+			},
+			"rect_km": [
+				916.54052734375,
+				1088.84838867188,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/bibliothek.png",
+			"start_frame": 775,
+			"visit_ms": 824,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.91176470588235
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 16.7857142857143
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.320556640625,
+				0.362989068031311,
+				0.469970703125
+			],
+			"city": "trier",
+			"end_frame": 887,
+			"fit": 0.897631779984721,
+			"id": "curia",
+			"load_and_settle_ms": 115,
+			"materials": {
+				"authored_batches": 19,
+				"checked_surfaces": 53,
+				"runtime_materials": 20,
+				"textured_batches": 7
+			},
+			"rect_km": [
+				-1036.95947265625,
+				-972.651611328125,
+				0.5,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/curia.png",
+			"start_frame": 831,
+			"visit_ms": 773,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.91176470588235
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 16.7857142857143
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.2349853515625,
+				0.173021197319031,
+				0.408821105957031
+			],
+			"city": "rome",
+			"end_frame": 951,
+			"fit": 0.658263305322129,
+			"id": "horreum",
+			"load_and_settle_ms": 209,
+			"materials": {
+				"authored_batches": 18,
+				"checked_surfaces": 49,
+				"runtime_materials": 19,
+				"textured_batches": 7
+			},
+			"rect_km": [
+				-548.20947265625,
+				-98.401611328125,
+				0.25,
+				0.5
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/horreum.png",
+			"start_frame": 887,
+			"visit_ms": 941,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 6.01208361457376
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 14.6007744925363
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.2349853515625,
+				0.413935720920563,
+				0.235107421875
+			],
+			"city": "alexandria",
+			"end_frame": 1007,
+			"fit": 0.705282112845138,
+			"id": "leuchtturm",
+			"load_and_settle_ms": 106,
+			"materials": {
+				"authored_batches": 19,
+				"checked_surfaces": 52,
+				"runtime_materials": 19,
+				"textured_batches": 5
+			},
+			"rect_km": [
+				913.29052734375,
+				1088.09838867188,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/leuchtturm.png",
+			"start_frame": 951,
+			"visit_ms": 675,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 2.3
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 2.3
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.2349853515625,
+				0.232634216547012,
+				0.235000610351562
+			],
+			"city": "rome",
+			"end_frame": 1063,
+			"fit": 0.662681196820453,
+			"id": "rundtempel",
+			"load_and_settle_ms": 126,
+			"materials": {
+				"authored_batches": 10,
+				"checked_surfaces": 27,
+				"runtime_materials": 10,
+				"textured_batches": 5
+			},
+			"rect_km": [
+				-545.45947265625,
+				-99.401611328125,
+				0.25,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/rundtempel.png",
+			"start_frame": 1007,
+			"visit_ms": 846,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 3.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 8.5
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.5
+				}
+			]
+		},
+		{
+			"away_return": true,
+			"bounds_km": [
+				0.58349609375,
+				0.421433210372925,
+				0.2349853515625
+			],
+			"city": "trier",
+			"end_frame": 1119,
+			"fit": 0.822829131652661,
+			"id": "stadttor",
+			"load_and_settle_ms": 138,
+			"materials": {
+				"authored_batches": 18,
+				"checked_surfaces": 49,
+				"runtime_materials": 19,
+				"textured_batches": 7
+			},
+			"rect_km": [
+				-1037.20947265625,
+				-974.151611328125,
+				0.75,
+				0.25
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/stadttor.png",
+			"start_frame": 1063,
+			"visit_ms": 777,
+			"zoom_samples": [
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				},
+				{
+					"logical_lod": 1,
+					"rendered_lod": 1,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						1
+					],
+					"width_km": 8.58210762341817
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						2
+					],
+					"width_km": 20.8422613711584
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 1,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 60.0
+				},
+				{
+					"logical_lod": 2,
+					"rendered_lod": 2,
+					"terrain_level": 2,
+					"visible": false,
+					"visible_children": [
+						2
+					],
+					"width_km": 120.0
+				},
+				{
+					"logical_lod": 0,
+					"rendered_lod": 0,
+					"terrain_level": 0,
+					"visible": true,
+					"visible_children": [
+						0
+					],
+					"width_km": 1.8
+				}
+			]
+		}
+	],
+	"pages_sha256_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_sha256_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"parcels_checked": 257,
+	"taverna": {
+		"adjacent_model": "baeckerei",
+		"bounds_km": [
+			0.21893310546875,
+			0.207060009241104,
+			0.1666259765625
+		],
+		"materials": 30,
+		"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/roman-series/integration/taverna-regression.png",
+		"textures": 9,
+		"zoom_samples": [
+			{
+				"lod": 0,
+				"terrain_level": 0,
+				"visible": true,
+				"width_km": 1.5
+			},
+			{
+				"lod": 1,
+				"terrain_level": 0,
+				"visible": true,
+				"width_km": 3.0
+			},
+			{
+				"lod": 2,
+				"terrain_level": 0,
+				"visible": true,
+				"width_km": 8.0
+			},
+			{
+				"lod": 2,
+				"terrain_level": 0,
+				"visible": true,
+				"width_km": 18.0
+			},
+			{
+				"lod": 2,
+				"terrain_level": 1,
+				"visible": false,
+				"width_km": 60.0
+			},
+			{
+				"lod": 2,
+				"terrain_level": 2,
+				"visible": false,
+				"width_km": 120.0
+			},
+			{
+				"lod": 0,
+				"terrain_level": 0,
+				"visible": true,
+				"width_km": 1.5
+			}
+		]
+	},
+	"test": "roman_series_landscape_integration"
+}

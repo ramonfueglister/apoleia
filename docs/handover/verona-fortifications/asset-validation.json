@@ -1,0 +1,555 @@
+{
+  "assets": {
+    "verona_wall_arm": {
+      "metadata_bounds_xyz": [
+        [
+          -1.1499998569488525,
+          -1.149999976158142,
+          -6.5
+        ],
+        [
+          5.300000190734863,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "foundation_depth_m": 6.5,
+      "lods": {
+        "detail": {
+          "triangles": 13112,
+          "bounds_xyz": [
+            [
+              -1.1499998569488525,
+              -1.149999976158142,
+              -6.5
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 27,
+          "road_clearance_rays": 0
+        },
+        "medium": {
+          "triangles": 1260,
+          "bounds_xyz": [
+            [
+              -1.149999976158142,
+              -1.149999976158142,
+              -6.5
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 27,
+          "road_clearance_rays": 0
+        },
+        "far": {
+          "triangles": 420,
+          "bounds_xyz": [
+            [
+              -1.149999976158142,
+              -1.149999976158142,
+              -6.5
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 27,
+          "road_clearance_rays": 0
+        }
+      }
+    },
+    "verona_wall_diagonal": {
+      "metadata_bounds_xyz": [
+        [
+          -1.1500000953674316,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          7.599999904632568,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 17248,
+          "bounds_xyz": [
+            [
+              -1.1500000953674316,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.599999904632568,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "medium": {
+          "triangles": 1512,
+          "bounds_xyz": [
+            [
+              -1.1500000953674316,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.599999904632568,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "far": {
+          "triangles": 504,
+          "bounds_xyz": [
+            [
+              -1.1500000953674316,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.599999904632568,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        }
+      }
+    },
+    "verona_wall_tower": {
+      "metadata_bounds_xyz": [
+        [
+          -1.909562110900879,
+          -1.909562110900879,
+          -2.0
+        ],
+        [
+          1.909562110900879,
+          1.909562110900879,
+          9.694056510925293
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 39360,
+          "bounds_xyz": [
+            [
+              -1.909562110900879,
+              -1.909562110900879,
+              -2.0
+            ],
+            [
+              1.909562110900879,
+              1.909562110900879,
+              9.694056510925293
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 0
+        },
+        "medium": {
+          "triangles": 4480,
+          "bounds_xyz": [
+            [
+              -1.899999976158142,
+              -1.899999976158142,
+              -2.0
+            ],
+            [
+              1.899999976158142,
+              1.899999976158142,
+              9.684135437011719
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 0
+        },
+        "far": {
+          "triangles": 1048,
+          "bounds_xyz": [
+            [
+              -1.899999976158142,
+              -1.899999976158142,
+              -2.0
+            ],
+            [
+              1.899999976158142,
+              1.899999976158142,
+              9.619999885559082
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 0
+        }
+      }
+    },
+    "verona_gate_link": {
+      "metadata_bounds_xyz": [
+        [
+          3.5,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          5.300000190734863,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 4620,
+          "bounds_xyz": [
+            [
+              3.5,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "medium": {
+          "triangles": 552,
+          "bounds_xyz": [
+            [
+              3.5,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "far": {
+          "triangles": 216,
+          "bounds_xyz": [
+            [
+              3.5,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              5.300000190734863,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        }
+      }
+    },
+    "verona_gate_diagonal_link": {
+      "metadata_bounds_xyz": [
+        [
+          3.500000238418579,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          7.600000381469727,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 8844,
+          "bounds_xyz": [
+            [
+              3.500000238418579,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.600000381469727,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "medium": {
+          "triangles": 816,
+          "bounds_xyz": [
+            [
+              3.5,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.600000381469727,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        },
+        "far": {
+          "triangles": 312,
+          "bounds_xyz": [
+            [
+              3.5,
+              -1.149999976158142,
+              -2.0
+            ],
+            [
+              7.600000381469727,
+              1.149999976158142,
+              7.799999713897705
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 18,
+          "road_clearance_rays": 0
+        }
+      }
+    },
+    "verona_gate": {
+      "metadata_bounds_xyz": [
+        [
+          -4.976130485534668,
+          -2.525662660598755,
+          -2.0
+        ],
+        [
+          4.976130485534668,
+          2.525662660598755,
+          9.720000267028809
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 81604,
+          "bounds_xyz": [
+            [
+              -4.976130485534668,
+              -2.525662660598755,
+              -2.0
+            ],
+            [
+              4.976130485534668,
+              2.525662660598755,
+              9.720000267028809
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 30
+        },
+        "medium": {
+          "triangles": 9332,
+          "bounds_xyz": [
+            [
+              -4.949999809265137,
+              -2.500000238418579,
+              -2.0
+            ],
+            [
+              4.949999809265137,
+              2.500000238418579,
+              9.706602096557617
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 30
+        },
+        "far": {
+          "triangles": 2496,
+          "bounds_xyz": [
+            [
+              -4.949999809265137,
+              -2.5,
+              -2.0
+            ],
+            [
+              4.949999809265137,
+              2.5,
+              9.619999885559082
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 30
+        }
+      }
+    },
+    "verona_gate_crossing": {
+      "metadata_bounds_xyz": [
+        [
+          -4.975662708282471,
+          -4.975662708282471,
+          -2.0
+        ],
+        [
+          4.975662708282471,
+          4.975662708282471,
+          9.687128067016602
+        ]
+      ],
+      "foundation_depth_m": 2.0,
+      "lods": {
+        "detail": {
+          "triangles": 126848,
+          "bounds_xyz": [
+            [
+              -4.975662708282471,
+              -4.975662708282471,
+              -2.0
+            ],
+            [
+              4.975662708282471,
+              4.975662708282471,
+              9.687128067016602
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 60
+        },
+        "medium": {
+          "triangles": 16544,
+          "bounds_xyz": [
+            [
+              -4.949999809265137,
+              -4.949999809265137,
+              -2.0
+            ],
+            [
+              4.949999809265137,
+              4.949999809265137,
+              9.67813491821289
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 60
+        },
+        "far": {
+          "triangles": 5728,
+          "bounds_xyz": [
+            [
+              -4.949999809265137,
+              -4.949999809265137,
+              -2.0
+            ],
+            [
+              4.949999809265137,
+              4.949999809265137,
+              9.619999885559082
+            ]
+          ],
+          "valid_indices_finite_vertices_normals": true,
+          "origin_identity": true,
+          "port_rays": 0,
+          "road_clearance_rays": 60
+        }
+      }
+    }
+  },
+  "failures": [],
+  "coordinate_system": "Authored Blender metres, Z up, origin unchanged",
+  "expected_foundation_depth_m": {
+    "verona_wall_arm": 6.5,
+    "verona_wall_diagonal": 2.0,
+    "verona_wall_tower": 2.0,
+    "verona_gate_link": 2.0,
+    "verona_gate_diagonal_link": 2.0,
+    "verona_gate": 2.0,
+    "verona_gate_crossing": 2.0
+  },
+  "export_warnings": 0,
+  "export_log_status": "checked",
+  "port_ray_checks": 243,
+  "road_ray_checks": 270,
+  "foundation_change_validation": {
+    "above_ground_geometry_exact": {
+      "detail": true,
+      "medium": true,
+      "far": true
+    },
+    "unchanged_other_assets": {
+      "verona_wall_diagonal": true,
+      "verona_gate_diagonal_link": true,
+      "verona_wall_tower": true,
+      "verona_gate_link": true,
+      "verona_gate_crossing": true,
+      "verona_gate": true
+    },
+    "wall_arm_foundation_depth_m": 6.5,
+    "export_log": "build/verona-fortifications-wall-arm-foundation.log",
+    "export_warnings": 0
+  }
+}

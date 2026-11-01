@@ -64,7 +64,7 @@ func final_audit():
 	for row in audit.residential:check(row.legacy_parts==0,"Old residential mesh remains at "+str(row.offset))
 	var checked:Array=[];var street_count=0;var shared:Dictionary={}
 	for spec:Dictionary in series.entries:
-		if spec.city!="verona":continue
+		if spec.city!="verona" or spec.has("infrastructure"):continue
 		check(series.instances.has(spec.id),"Verona replacement not installed: "+str(spec.id))
 		if not series.instances.has(spec.id):continue
 		var building=series.instances[spec.id]
