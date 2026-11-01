@@ -6,6 +6,8 @@ Die anschliessende Verbesserung der feinen Kanten und Nahschatten ist unter [Nah
 
 Die beiden anschliessend ergänzten Steinbrücken sind unter [Verona – Brücken und Uferanschlüsse](VERONA_BRIDGES.md) dokumentiert.
 
+Eine anschliessende Nutzerkorrektur beseitigt in die Türme hineinlaufende Mauerarme. Die Enden liegen nun auf den jeweiligen Fassaden; das diagonale Kreuzungstor besitzt dafür eine eigene Anschlussvariante. Details und der reproduzierte Fehler stehen unter [Mauerenden an Türmen und Toren](../handover/verona-wall-joins/validation.md). Die ursprünglichen Prüfberichte unten dokumentieren den damaligen Stand und prüften die Turminnenräume noch nicht.
+
 Nach den Wohnvierteln erhalten Veronas vier Mauerparzellen, vier Tore und 23 Grabparzellen eigene Modelle. Sie verwenden dieselbe Materialfamilie und denselben einheitlichen Massstab wie die akzeptierten Häuser. Die Modelle sind eigene römische Bautypen, keine behaupteten archäologischen Rekonstruktionen. Stadtplan, Strassennetz, Fluss, Parzellen und Simulation werden nicht neu erzeugt.
 
 ## Modelle

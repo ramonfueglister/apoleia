@@ -1,0 +1,377 @@
+{
+  "assets": {
+    "verona_wall_arm": {
+      "slug": "verona_wall_arm",
+      "source_bounds_xyz": [
+        [
+          1.8300000429153442,
+          -1.149999976158142,
+          -6.5
+        ],
+        [
+          5.300000190734863,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "metres": true,
+      "lod_method": "shape_preserving_v1",
+      "detail_topology": "separate_primitives",
+      "lods": {
+        "detail": {
+          "triangles": 7436,
+          "material_batches": 4
+        },
+        "medium": {
+          "triangles": 780,
+          "material_batches": 4,
+          "primitive_actions": {
+            "closed_box": 65
+          }
+        },
+        "far": {
+          "triangles": 276,
+          "material_batches": 4,
+          "primitive_actions": {
+            "closed_box": 23
+          }
+        }
+      },
+      "family": "verona_fortifications",
+      "origin_policy": "authored",
+      "authored_origin_xyz": [
+        0,
+        0,
+        0
+      ],
+      "foundation_depth_m": 6.5,
+      "walkway_height_m": 6.4,
+      "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+      "wall_port": {
+        "axis": "positive_x",
+        "start_m": 1.83,
+        "end_m": 5.3,
+        "width_m": 2.3
+      },
+      "attachment": {
+        "type": "flat",
+        "shell": "central_tower",
+        "face_m": 1.83,
+        "source_axes": "Blender X longitudinal, Y transverse, Z up",
+        "closed_end_faces": true,
+        "interior_intrusion": false
+      }
+    },
+    "verona_wall_diagonal": {
+      "slug": "verona_wall_diagonal",
+      "source_bounds_xyz": [
+        [
+          1.4410107135772705,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          7.599999904632568,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "metres": true,
+      "lod_method": "shape_preserving_v1",
+      "detail_topology": "separate_primitives",
+      "lods": {
+        "detail": {
+          "triangles": 13104,
+          "material_batches": 4
+        },
+        "medium": {
+          "triangles": 2200,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 36,
+            "closed_box": 72
+          }
+        },
+        "far": {
+          "triangles": 1024,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 22,
+            "closed_box": 16
+          }
+        }
+      },
+      "family": "verona_fortifications",
+      "origin_policy": "authored",
+      "authored_origin_xyz": [
+        0,
+        0,
+        0
+      ],
+      "foundation_depth_m": 2.0,
+      "walkway_height_m": 6.4,
+      "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+      "wall_port": {
+        "axis": "positive_x",
+        "start_m": 1.4380108191427645,
+        "end_m": 7.6,
+        "width_m": 2.3
+      },
+      "attachment": {
+        "type": "square_v",
+        "shell": "central_tower",
+        "face_m": 1.83,
+        "source_axes": "Blender X longitudinal, Y transverse, Z up",
+        "closed_end_faces": true,
+        "interior_intrusion": false
+      }
+    },
+    "verona_gate_link": {
+      "slug": "verona_gate_link",
+      "source_bounds_xyz": [
+        [
+          4.880000114440918,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          5.300000190734863,
+          1.149999976158142,
+          7.029999732971191
+        ]
+      ],
+      "metres": true,
+      "lod_method": "shape_preserving_v1",
+      "detail_topology": "separate_primitives",
+      "lods": {
+        "detail": {
+          "triangles": 1892,
+          "material_batches": 4
+        },
+        "medium": {
+          "triangles": 336,
+          "material_batches": 4,
+          "primitive_actions": {
+            "closed_box": 28
+          }
+        },
+        "far": {
+          "triangles": 168,
+          "material_batches": 4,
+          "primitive_actions": {
+            "closed_box": 14
+          }
+        }
+      },
+      "family": "verona_fortifications",
+      "origin_policy": "authored",
+      "authored_origin_xyz": [
+        0,
+        0,
+        0
+      ],
+      "foundation_depth_m": 2.0,
+      "walkway_height_m": 6.4,
+      "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+      "wall_port": {
+        "axis": "positive_x",
+        "start_m": 4.88,
+        "end_m": 5.3,
+        "width_m": 2.3
+      },
+      "attachment": {
+        "type": "flat",
+        "shell": "gate_pavilion",
+        "face_m": 4.88,
+        "source_axes": "Blender X longitudinal, Y transverse, Z up",
+        "closed_end_faces": true,
+        "interior_intrusion": false
+      }
+    },
+    "verona_gate_diagonal_link": {
+      "slug": "verona_gate_diagonal_link",
+      "source_bounds_xyz": [
+        [
+          3.288046360015869,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          7.599999904632568,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "metres": true,
+      "lod_method": "shape_preserving_v1",
+      "detail_topology": "separate_primitives",
+      "lods": {
+        "detail": {
+          "triangles": 7308,
+          "material_batches": 4
+        },
+        "medium": {
+          "triangles": 1656,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 32,
+            "closed_box": 36
+          }
+        },
+        "far": {
+          "triangles": 816,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 18,
+            "closed_box": 8
+          }
+        }
+      },
+      "family": "verona_fortifications",
+      "origin_policy": "authored",
+      "authored_origin_xyz": [
+        0,
+        0,
+        0
+      ],
+      "foundation_depth_m": 2.0,
+      "walkway_height_m": 6.4,
+      "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+      "wall_port": {
+        "axis": "positive_x",
+        "start_m": 3.288046532517446,
+        "end_m": 7.6,
+        "width_m": 2.3
+      },
+      "attachment": {
+        "type": "tapered",
+        "shell": "normal_gate_pavilion",
+        "keep_halfplanes_xy": [
+          [
+            1,
+            -1,
+            3.4365389565666216
+          ],
+          [
+            1,
+            1,
+            3.1395541084682717
+          ]
+        ],
+        "source_axes": "Blender X longitudinal, Y transverse, Z up",
+        "closed_end_faces": true,
+        "interior_intrusion": false
+      }
+    },
+    "verona_gate_crossing_diagonal_link": {
+      "slug": "verona_gate_crossing_diagonal_link",
+      "source_bounds_xyz": [
+        [
+          5.754362106323242,
+          -1.149999976158142,
+          -2.0
+        ],
+        [
+          7.599999904632568,
+          1.149999976158142,
+          7.799999713897705
+        ]
+      ],
+      "metres": true,
+      "lod_method": "shape_preserving_v1",
+      "detail_topology": "separate_primitives",
+      "lods": {
+        "detail": {
+          "triangles": 4488,
+          "material_batches": 4
+        },
+        "medium": {
+          "triangles": 1360,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 32,
+            "closed_box": 18
+          }
+        },
+        "far": {
+          "triangles": 688,
+          "material_batches": 4,
+          "primitive_actions": {
+            "structural_mesh": 18,
+            "closed_box": 4
+          }
+        }
+      },
+      "family": "verona_fortifications",
+      "origin_policy": "authored",
+      "authored_origin_xyz": [
+        0,
+        0,
+        0
+      ],
+      "foundation_depth_m": 2.0,
+      "walkway_height_m": 6.4,
+      "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
+      "wall_port": {
+        "axis": "positive_x",
+        "start_m": 5.751362184380705,
+        "end_m": 7.6,
+        "width_m": 2.3
+      },
+      "attachment": {
+        "type": "square_v",
+        "shell": "crossing_corner_pavilion",
+        "face_m": 4.88,
+        "source_axes": "Blender X longitudinal, Y transverse, Z up",
+        "closed_end_faces": true,
+        "interior_intrusion": false
+      }
+    }
+  },
+  "unchanged_assets": {
+    "verona_wall_tower": {
+      "sha256": "c4c27cdd21f884719a02796c37bd4a72ba700e9cbbf063565f4c460de87d60ab",
+      "byte_identical": true
+    },
+    "verona_gate": {
+      "sha256": "974e7f9ccc505c0b0199d35f30c7f895a12e607d636e5d946e18874723b07da2",
+      "byte_identical": true
+    },
+    "verona_gate_crossing": {
+      "sha256": "58c1923397fbc5bb74507816ee2f047ae37daff7e5cb16f7f6689ab4adc4fb2c",
+      "byte_identical": true
+    }
+  },
+  "export_warnings": [
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join",
+    "Warning: No mesh data to join"
+  ]
+}

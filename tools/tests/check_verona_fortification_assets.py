@@ -8,6 +8,7 @@ The Blender export log is optional; absent logs are reported as not checked.
 """
 
 import json
+import math
 import struct
 from pathlib import Path
 
@@ -23,14 +24,16 @@ SLUGS = [
     "verona_wall_tower",
     "verona_gate_link",
     "verona_gate_diagonal_link",
+    "verona_gate_crossing_diagonal_link",
     "verona_gate",
     "verona_gate_crossing",
 ]
 PORTS = {
-    "verona_wall_arm": (-1.15, 5.30),
-    "verona_wall_diagonal": (-1.15, 7.60),
-    "verona_gate_link": (3.50, 5.30),
-    "verona_gate_diagonal_link": (3.50, 7.60),
+    "verona_wall_arm": 5.30,
+    "verona_wall_diagonal": 7.60,
+    "verona_gate_link": 5.30,
+    "verona_gate_diagonal_link": 7.60,
+    "verona_gate_crossing_diagonal_link": 7.60,
 }
 GATES = {"verona_gate", "verona_gate_crossing"}
 EXPECTED_FOUNDATION_DEPTHS = {
@@ -39,6 +42,7 @@ EXPECTED_FOUNDATION_DEPTHS = {
     "verona_wall_tower": 2.0,
     "verona_gate_link": 2.0,
     "verona_gate_diagonal_link": 2.0,
+    "verona_gate_crossing_diagonal_link": 2.0,
     "verona_gate": 2.0,
     "verona_gate_crossing": 2.0,
 }
@@ -112,22 +116,49 @@ def mesh_primitives(document, node):
         yield from mesh_primitives(document, document["nodes"][child_index])
 
 
+def port_start(slug, transverse):
+    """Independent exterior-plane contract, in authored Blender X/Y metres."""
+    if slug == "verona_wall_arm":
+        return 1.83
+    if slug == "verona_gate_link":
+        return 4.88
+    if slug == "verona_wall_diagonal":
+        return math.sqrt(2) * 1.83 - abs(transverse)
+    if slug == "verona_gate_crossing_diagonal_link":
+        return math.sqrt(2) * 4.88 - abs(transverse)
+    # Ordinary gate's SE link meets both the pavilion's south exterior
+    # and its east-side inner edge, preserving the adjacent road passage.
+    return max(transverse + math.sqrt(2) * 2.43,
+               -transverse + math.sqrt(2) * 2.22)
+
+
 def check_ports(slug, tag, triangles, low, high, result):
-    start, end = PORTS[slug]
-    assert abs(low[0] - start) < 1e-5
+    end = PORTS[slug]
+    # Include the two-plane profile's crease when calculating its exact
+    # minimum; merely testing a declared bounding box misses the old overlap.
+    crease = math.sqrt(2) * (2.22 - 2.43) / 2
+    start_min = min(port_start(slug, y) for y in [-1.15, 0, 1.15, crease])
+    # The existing 3mm edge bevel trims the outermost V-profile tip. This
+    # permits only an inward bound offset; the sampled closed endfaces below
+    # must still lie exactly on the analytic clipping plane.
+    tip_bevel = .0031 if slug in {"verona_wall_diagonal", "verona_gate_crossing_diagonal_link"} else 1e-5
+    assert -1e-5 < low[0] - start_min < tip_bevel, (slug, tag, "profile bounds", low[0], start_min)
     assert abs(high[0] - end) < 1e-5
     assert abs(low[1] + 1.15) < 1e-5
     assert abs(high[1] - 1.15) < 1e-5
     heights = [-1.5, 0.1, 0.8, 3.0, 5.5, 6.3]
     if slug == "verona_wall_arm":
         heights = [-6.3, -4.0, -2.5] + heights
-    for y in [-0.9, 0, 0.9]:
+    for y in [-0.9, -0.45, 0, 0.45, 0.9]:
+        start = port_start(slug, y)
         for z in heights:
             hits = hit_distances(triangles, (start - 1, y, z), (1, 0, 0))
             result["port_rays"] += 1
             assert np.any(np.abs(hits - 1) < 1e-4) and np.any(
                 np.abs(hits - (end - start + 1)) < 1e-4
-            ), (slug, tag, y, z, "endfaces missing")
+            ), (slug, tag, y, z, "profile start or unchanged far endface missing")
+            assert not np.any(hits < 1 - 1e-4), (
+                slug, tag, y, z, "geometry protrudes inside the exterior-plane profile")
 
 
 def check_road_clearance(slug, tag, triangles, result):

@@ -1,0 +1,390 @@
+{
+	"atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"failures": [],
+	"game_frames": 441,
+	"pages_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"phase": "baseline",
+	"test": "verona_wall_joins_check",
+	"views": [
+		{
+			"name": "join-13-12",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-13-12.png",
+			"target": [
+				-672.33447265625,
+				-494.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-12-13",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-12-13.png",
+			"target": [
+				-672.58447265625,
+				-494.026611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-12-15",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-12-15.png",
+			"target": [
+				-672.58447265625,
+				-493.526611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-13-16",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-13-16.png",
+			"target": [
+				-672.33447265625,
+				-493.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-14-12",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-14-12.png",
+			"target": [
+				-672.08447265625,
+				-494.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-15-13",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-15-13.png",
+			"target": [
+				-671.83447265625,
+				-494.026611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-12-14",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-12-14.png",
+			"target": [
+				-672.58447265625,
+				-493.776611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "join-14-16",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/join-14-16.png",
+			"target": [
+				-672.08447265625,
+				-493.276611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "overview",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-wall-joins/baseline/overview.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 3.0
+		}
+	],
+	"wall_instances": [
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_0",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_1",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18458_6918_2",
+			"rect": [
+				18458,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_gate_18459_6918",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18459_6918_0",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_gate_diagonal_link",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18459_6918_1",
+			"rect": [
+				18459,
+				6918,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_0",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_1",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_fort_18457_6919_2",
+			"rect": [
+				18457,
+				6919,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_crossing",
+			"diagonal": false,
+			"ground": 0.60595,
+			"id": "verona_gate_18460_6919",
+			"rect": [
+				18460,
+				6919,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_diagonal_link",
+			"diagonal": true,
+			"ground": 0.60595,
+			"id": "verona_fort_18460_6919_0",
+			"rect": [
+				18460,
+				6919,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_gate_18457_6920",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6920_0",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6920_1",
+			"rect": [
+				18457,
+				6920,
+				1,
+				1
+			],
+			"turns": 1
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_0",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 3
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_1",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18457_6921_2",
+			"rect": [
+				18457,
+				6921,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_arm",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_0",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_wall_diagonal",
+			"diagonal": true,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_1",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 2
+		},
+		{
+			"asset": "verona_wall_tower",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18458_6922_2",
+			"rect": [
+				18458,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_gate_18459_6922",
+			"rect": [
+				18459,
+				6922,
+				1,
+				1
+			],
+			"turns": 0
+		},
+		{
+			"asset": "verona_gate_link",
+			"diagonal": false,
+			"ground": 0.45595,
+			"id": "verona_fort_18459_6922_0",
+			"rect": [
+				18459,
+				6922,
+				1,
+				1
+			],
+			"turns": 2
+		}
+	]
+}

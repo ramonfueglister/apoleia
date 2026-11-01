@@ -2,14 +2,14 @@
   "slug": "verona_gate_link",
   "source_bounds_xyz": [
     [
-      3.5,
+      4.880000114440918,
       -1.149999976158142,
       -2.0
     ],
     [
       5.300000190734863,
       1.149999976158142,
-      7.799999713897705
+      7.029999732971191
     ]
   ],
   "metres": true,
@@ -17,21 +17,21 @@
   "detail_topology": "separate_primitives",
   "lods": {
     "detail": {
-      "triangles": 4620,
+      "triangles": 1892,
       "material_batches": 4
     },
     "medium": {
-      "triangles": 552,
+      "triangles": 336,
       "material_batches": 4,
       "primitive_actions": {
-        "closed_box": 46
+        "closed_box": 28
       }
     },
     "far": {
-      "triangles": 216,
+      "triangles": 168,
       "material_batches": 4,
       "primitive_actions": {
-        "closed_box": 18
+        "closed_box": 14
       }
     }
   },
@@ -47,8 +47,16 @@
   "historical_status": "Original artistic Roman typology; not an archaeological reconstruction.",
   "wall_port": {
     "axis": "positive_x",
-    "start_m": 3.5,
+    "start_m": 4.88,
     "end_m": 5.3,
     "width_m": 2.3
+  },
+  "attachment": {
+    "type": "flat",
+    "shell": "gate_pavilion",
+    "face_m": 4.88,
+    "source_axes": "Blender X longitudinal, Y transverse, Z up",
+    "closed_end_faces": true,
+    "interior_intrusion": false
   }
 }

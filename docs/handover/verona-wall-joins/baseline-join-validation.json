@@ -1,0 +1,2398 @@
+{
+  "scope": "Actual exported arm/link triangles against all tower/pavilion interiors",
+  "coordinate_system": "Local authored metres; actual GPU-corner ground offsets applied",
+  "runtime_report": "build/verona-wall-joins/baseline/report.json",
+  "runtime_report_sha256": "e5e9bb4d4f408112e7604e12c6817f215d7220e0bef14585fd12e601b62a95f9",
+  "runtime_phase": "baseline",
+  "asset_sha256": {
+    "verona_gate_diagonal_link": "2bf394aede5d2f73790ca0a63cb6723b61e59944dd284554bf14430f7e84cfb9",
+    "verona_gate_link": "484f3a71e10a6ed347d5ce178121792b60592174cc3bb77d1c04c905a16e0671",
+    "verona_wall_arm": "e79af52a33a51125377ba72daca70937128f83060139d201df6629466a3b6544",
+    "verona_wall_diagonal": "07a2551b1565d22112ed22495b1a740a3754774b2977765d9c0623cd07d2000f"
+  },
+  "interior_margin_m": 0.005,
+  "instances": 22,
+  "directed_arms": 14,
+  "cores": 8,
+  "graph_edges": 7,
+  "lods": [
+    "detail",
+    "medium",
+    "far"
+  ],
+  "triangle_box_checks": 588,
+  "failures": [
+    "verona_fort_18458_6918_0 (verona_wall_arm)/detail intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6918_0 (verona_wall_arm)/medium intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6918_0 (verona_wall_arm)/far intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6918_1 (verona_wall_diagonal)/detail intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6918_1 (verona_wall_diagonal)/medium intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6918_1 (verona_wall_diagonal)/far intrudes into verona_fort_18458_6918_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6918_0 (verona_gate_link)/detail intrudes into verona_gate_18459_6918 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6918_0 (verona_gate_link)/medium intrudes into verona_gate_18459_6918 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6918_0 (verona_gate_link)/far intrudes into verona_gate_18459_6918 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6918_1 (verona_gate_diagonal_link)/detail intrudes into verona_gate_18459_6918 interior 1; ground delta 0.000000m",
+    "verona_fort_18459_6918_1 (verona_gate_diagonal_link)/medium intrudes into verona_gate_18459_6918 interior 1; ground delta 0.000000m",
+    "verona_fort_18459_6918_1 (verona_gate_diagonal_link)/far intrudes into verona_gate_18459_6918 interior 1; ground delta 0.000000m",
+    "verona_fort_18457_6919_0 (verona_wall_arm)/detail intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6919_0 (verona_wall_arm)/medium intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6919_0 (verona_wall_arm)/far intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6919_1 (verona_wall_diagonal)/detail intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6919_1 (verona_wall_diagonal)/medium intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6919_1 (verona_wall_diagonal)/far intrudes into verona_fort_18457_6919_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18460_6919_0 (verona_gate_diagonal_link)/detail intrudes into verona_gate_18460_6919 interior 1; ground delta 0.000000m",
+    "verona_fort_18460_6919_0 (verona_gate_diagonal_link)/medium intrudes into verona_gate_18460_6919 interior 1; ground delta 0.000000m",
+    "verona_fort_18460_6919_0 (verona_gate_diagonal_link)/far intrudes into verona_gate_18460_6919 interior 1; ground delta 0.000000m",
+    "verona_fort_18457_6920_0 (verona_gate_link)/detail intrudes into verona_gate_18457_6920 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6920_0 (verona_gate_link)/medium intrudes into verona_gate_18457_6920 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6920_0 (verona_gate_link)/far intrudes into verona_gate_18457_6920 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6920_1 (verona_gate_link)/detail intrudes into verona_gate_18457_6920 interior 1; ground delta 0.000000m",
+    "verona_fort_18457_6920_1 (verona_gate_link)/medium intrudes into verona_gate_18457_6920 interior 1; ground delta 0.000000m",
+    "verona_fort_18457_6920_1 (verona_gate_link)/far intrudes into verona_gate_18457_6920 interior 1; ground delta 0.000000m",
+    "verona_fort_18457_6921_0 (verona_wall_arm)/detail intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6921_0 (verona_wall_arm)/medium intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6921_0 (verona_wall_arm)/far intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6921_1 (verona_wall_diagonal)/detail intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6921_1 (verona_wall_diagonal)/medium intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18457_6921_1 (verona_wall_diagonal)/far intrudes into verona_fort_18457_6921_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_0 (verona_wall_arm)/detail intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_0 (verona_wall_arm)/medium intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_0 (verona_wall_arm)/far intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_1 (verona_wall_diagonal)/detail intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_1 (verona_wall_diagonal)/medium intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18458_6922_1 (verona_wall_diagonal)/far intrudes into verona_fort_18458_6922_2 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6922_0 (verona_gate_link)/detail intrudes into verona_gate_18459_6922 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6922_0 (verona_gate_link)/medium intrudes into verona_gate_18459_6922 interior 0; ground delta 0.000000m",
+    "verona_fort_18459_6922_0 (verona_gate_link)/far intrudes into verona_gate_18459_6922 interior 0; ground delta 0.000000m"
+  ],
+  "ground_levels_km": [
+    0.45595,
+    0.60595
+  ],
+  "checked_pairs": [
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6918_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": [
+            1
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6918_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6919_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": [
+            1
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18460_6919_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 8844,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 816,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 312,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": [
+            1
+          ]
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": [
+            1
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6920_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18457_6921_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 13112,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1260,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 420,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18458_6922_1",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 17248,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 1512,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 504,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_fort_18458_6918_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_gate_18459_6918",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_fort_18457_6919_2",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_gate_18460_6919",
+      "ground_delta_m": -6.302521008403359,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_gate_18457_6920",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_fort_18457_6921_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_fort_18458_6922_2",
+      "ground_delta_m": 0.0,
+      "same_parcel": false,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": []
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": []
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": []
+        }
+      }
+    },
+    {
+      "arm": "verona_fort_18459_6922_0",
+      "core": "verona_gate_18459_6922",
+      "ground_delta_m": 0.0,
+      "same_parcel": true,
+      "lod_checks": {
+        "detail": {
+          "triangles": 4620,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "medium": {
+          "triangles": 552,
+          "intruded_interiors": [
+            0
+          ]
+        },
+        "far": {
+          "triangles": 216,
+          "intruded_interiors": [
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

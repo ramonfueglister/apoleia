@@ -1,0 +1,21 @@
+{
+  "docs/handover/verona-wall-joins/asset-validation.json": "94ecd5b0bb2a63f912365519f732aaa8c3d8599bb2e370959bfeceb902f1f920",
+  "docs/handover/verona-wall-joins/baseline-join-validation.json": "1a1d6501c3e319a0048ae3902cbddd2fec5c67be6f57ea6b15e660fb93262b70",
+  "docs/handover/verona-wall-joins/baseline-report.json": "e5e9bb4d4f408112e7604e12c6817f215d7220e0bef14585fd12e601b62a95f9",
+  "docs/handover/verona-wall-joins/before-gate.png": "478d581b6fcf084477ba4e3ae255f192a2d3c8e0e0bb206ccac9f9a5a839ce75",
+  "docs/handover/verona-wall-joins/before-tower.png": "f759501d98a4b4adb91c4d11dbcf2345281a3c1b37ebd9cb5c145213398ce9f5",
+  "docs/handover/verona-wall-joins/final-report.json": "25199af6c4638bbc1ebc80bd36b91292158a27c9d0d9d5709f9efaeecaf3ff8c",
+  "docs/handover/verona-wall-joins/generation-report.json": "e99e7e8353e0d21f34278d305a218361fe2f5888fa9ffdaceac8517767ed6afd",
+  "docs/handover/verona-wall-joins/join-12-13.png": "1e5c86599a75d5c3158e4c031ae6464814efd9a1ecb55ca9e7a09dd5518f6ef5",
+  "docs/handover/verona-wall-joins/join-12-14.png": "d170115243f209d8571b80c209ed9e560c4e3fd416c61a50ee33a71cab17f283",
+  "docs/handover/verona-wall-joins/join-12-15.png": "5647bd3ed4c0cad6162cde8436e220112b4c60f4feaaac79a7f398e94eca9fc5",
+  "docs/handover/verona-wall-joins/join-13-12.png": "34c6d379e34d1258145fa7b9bf2e76938844474d256b627ac2c2b59ceb3704c9",
+  "docs/handover/verona-wall-joins/join-13-16.png": "f5940c31a53bbfccb7ec7e33ef75f32c529d5b92d03cb60b3e44b93f2bd37108",
+  "docs/handover/verona-wall-joins/join-14-12.png": "76f1e711331b1bccd9cd0b11198b2023d791faa5d1690c7796395dcb743c004e",
+  "docs/handover/verona-wall-joins/join-14-16-reverse.png": "d117d8930384df041ac0a8c1f0716b8b0f0ea21fd74c7e10ee784db4cb2e7822",
+  "docs/handover/verona-wall-joins/join-14-16.png": "bfd47e567fce5bdd53c037f26f20f65d30caf73d499fee3f507a4b7ff750b33b",
+  "docs/handover/verona-wall-joins/join-15-13.png": "e34a2f2b1feb77605a4d8f0f73ccb1580d0925bca7f1d5b21ee4d3ab1d1a8cd3",
+  "docs/handover/verona-wall-joins/join-validation.json": "e29ad00c96547d76f3ca8801953b62d36feae6cf13520054ab4c3a282bfcf7d2",
+  "docs/handover/verona-wall-joins/overview.png": "7d7370f412b3a54f4c46a0565b9ebf0eddf6bf6c12b593cf312fbb6436d14d39",
+  "docs/handover/verona-wall-joins/runtime-variant-check.json": "4132dc83e11dba25c26cb99be819438d5027b17b15a954038b3c26753440c6c4"
+}
