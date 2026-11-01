@@ -1,10 +1,10 @@
 # Verona – erster Uferabschnitt
 
-Status: validiert für den lokalen Pilot; [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
+Status: Uferdetails lokal validiert; Flusshöhen offen (Nutzerbefund vom 01.11.2026); [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
 
 ## Beobachtete Grundlage
 
-Die blaue Flussfläche folgt im nahen Renderer einer Bandfunktion über den vorhandenen Geländedreiecken. Die sichtbare trockene Uferseite stimmt daher nicht überall mit der Grenze zwischen Land- und Wasserparzellen des Stadtatlas überein. Die bestehenden Höhen und Wasserbandbreiten müssen erhalten bleiben. Parzellen mit Strassen, Brücken, Mauern oder Gebäuden sind keine freie Gestaltungsfläche.
+Die blaue Flussfläche folgt im nahen Renderer einer Bandfunktion über den vorhandenen Geländedreiecken. Die sichtbare trockene Uferseite stimmt daher nicht überall mit der Grenze zwischen Land- und Wasserparzellen des Stadtatlas überein. Für den ursprünglichen Detailpilot wurden Höhen und Wasserbandbreiten unverändert übernommen. Das validiert die Wasserhöhen nicht: Das Flussband übernimmt auch Querhänge und ansteigende Geländestücke. Diese offene Grunddarstellung muss separat korrigiert und anschliessend gemeinsam mit den Uferdetails geprüft werden. Parzellen mit Strassen, Brücken, Mauern oder Gebäuden sind keine freie Gestaltungsfläche.
 
 ## Eigene Gestaltung
 
