@@ -149,6 +149,8 @@ void vertex() {
 			level = hi;
 			if (prop_kind == 5) {
 				show = show && (plan == CP_NONE || cp_on_terrace(plan));
+				// The loaded bridge replaces this solid retaining block atomically.
+				show = show && !cp_verona_bridge_active(t);
 				plan_top = plan != CP_NONE && NORMAL.y > 0.5 ? 1.0 : 0.0;
 				float wall = (hi - lo) * level_h + lift;
 				float off = UV.x * s; // the coping and base rows keep their height

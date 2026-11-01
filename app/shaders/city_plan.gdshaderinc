@@ -54,6 +54,16 @@ int cp_kind(ivec2 parcel) {
 	return cp_texel(parcel).r;
 }
 
+// Complete, loaded Verona bridge groups only. Zero restores the original
+// terrain/plinth view. This mask never changes atlas texels or road links.
+uniform int verona_bridge_groups = 0;
+bool cp_verona_bridge_active(ivec2 parcel) {
+	if (verona_bridge_groups == 0) { return false; }
+	bool member = ((verona_bridge_groups & 1) != 0 && parcel.x == 18459 && parcel.y >= 6914 && parcel.y <= 6917)
+		|| ((verona_bridge_groups & 2) != 0 && parcel.y == 6920 && parcel.x >= 18460 && parcel.x <= 18463);
+	return member && cp_kind(parcel) == CP_BRIDGE;
+}
+
 ivec2 cp_parcel(vec2 p) {
 	return ivec2(floor((p - world_min) / CP_PARCEL_KM));
 }

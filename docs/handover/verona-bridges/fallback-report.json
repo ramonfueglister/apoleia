@@ -1,0 +1,11 @@
+{
+	"cases": [
+		"missing_asset",
+		"missing_lod",
+		"empty_lod",
+		"late_install_rollback",
+		"far_reset_and_near_return"
+	],
+	"failures": [],
+	"test": "verona_bridge_fallback_check"
+}

@@ -1,0 +1,128 @@
+{
+	"atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"failures": [],
+	"game_frames": 499,
+	"pages_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"pages_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+	"phase": "baseline",
+	"renderer": "Apple M3 Pro (Apple9)",
+	"test": "verona_bridges_check",
+	"views": [
+		{
+			"name": "north-bridge",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/north-bridge.png",
+			"target": [
+				-672.08447265625,
+				-494.901611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.8
+		},
+		{
+			"name": "east-bridge",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/east-bridge.png",
+			"target": [
+				-671.45947265625,
+				-493.776611328125
+			],
+			"terrain_level": 0,
+			"width_km": 1.8
+		},
+		{
+			"name": "north-bank",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/north-bank.png",
+			"target": [
+				-672.08447265625,
+				-495.401611328125
+			],
+			"terrain_level": 0,
+			"width_km": 0.8
+		},
+		{
+			"name": "gate-junction",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/gate-junction.png",
+			"target": [
+				-671.859375,
+				-493.876586914062
+			],
+			"terrain_level": 0,
+			"width_km": 1.0
+		},
+		{
+			"name": "east-end",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/east-end.png",
+			"target": [
+				-671.08447265625,
+				-493.776611328125
+			],
+			"terrain_level": 0,
+			"width_km": 0.8
+		},
+		{
+			"name": "city-1.5",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/city-1.5.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 1.5
+		},
+		{
+			"name": "city-5.0",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/city-5.0.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 5.0
+		},
+		{
+			"name": "city-12.0",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/city-12.0.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 12.0
+		},
+		{
+			"name": "city-24.0",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/city-24.0.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 0,
+			"width_km": 24.0
+		},
+		{
+			"name": "city-60.0",
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-bridges/baseline/city-60.0.png",
+			"target": [
+				-672.0,
+				-494.0
+			],
+			"terrain_level": 1,
+			"width_km": 60.0
+		}
+	],
+	"weather": {
+		"auto": true,
+		"cells": 0,
+		"cloud_base": 90.0,
+		"coarse_slots": 0,
+		"enabled": false,
+		"fine_slots": 0,
+		"local": [
+			0.0,
+			0.0,
+			0.0
+		],
+		"state": "fair",
+		"time_of_day": 0.5
+	}
+}

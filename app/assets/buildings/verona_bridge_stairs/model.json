@@ -1,0 +1,91 @@
+{
+  "slug": "verona_bridge_stairs",
+  "source_bounds_xyz": [
+    [
+      -1.5,
+      1.2999999523162842,
+      -0.6499999761581421
+    ],
+    [
+      1.5,
+      5.252100944519043,
+      7.392521381378174
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "detail_topology": "separate_primitives",
+  "lods": {
+    "detail": {
+      "triangles": 3764,
+      "material_batches": 7
+    },
+    "medium": {
+      "triangles": 756,
+      "material_batches": 7,
+      "primitive_actions": {
+        "structural_mesh": 1,
+        "closed_box": 62
+      }
+    },
+    "far": {
+      "triangles": 468,
+      "material_batches": 6,
+      "primitive_actions": {
+        "structural_mesh": 1,
+        "closed_box": 38
+      }
+    }
+  },
+  "family": "verona_bridges",
+  "origin_policy": "authored",
+  "authored_origin_xyz": [
+    0,
+    0,
+    0
+  ],
+  "source_axes": {
+    "x": "east",
+    "y": "north",
+    "z": "up"
+  },
+  "parcel_length_m": 10.504201680672269,
+  "road_width_m": 2.5210084033613445,
+  "deck_width_m": 3.0,
+  "clear_width_m": 2.5210084033613445,
+  "parapet_height_m": 1.1,
+  "deck_top_z_m": 0.0,
+  "historical_status": "Original artistic Roman bridge typology; not an archaeological reconstruction.",
+  "ports": [
+    "south",
+    "north"
+  ],
+  "pedestrian_only": true,
+  "source_deck_profile": {
+    "type": "stairs",
+    "axis": "y",
+    "start_m": 1.3,
+    "end_m": 5.2521008403361344,
+    "start_z_m": 0.0,
+    "end_z_m": 6.302521008403361,
+    "risers": 32,
+    "treads": 33,
+    "total_levels": 33,
+    "authored_treads": 32,
+    "first_authored_tread_index": 1,
+    "lower_landing": "junction_deck",
+    "lower_landing_asset": "verona_bridge_junction",
+    "lower_landing_bounds_m": {
+      "x": [
+        -1.5,
+        1.5
+      ],
+      "y": [
+        1.3,
+        1.4197606315253375
+      ],
+      "z": 0.0
+    },
+    "runtime_grade_allowed": false
+  }
+}

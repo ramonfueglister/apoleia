@@ -1,0 +1,384 @@
+{
+  "coordinate_system": "Authored metres, Z up, identity transforms",
+  "parcel_metres": 10.504201680672269,
+  "active_road_width_metres": 2.5210084033613445,
+  "scope": "Exported mesh geometry; runtime seating and visual craft require separate checks",
+  "assets": {
+    "verona_bridge_span": {
+      "lods": {
+        "detail": {
+          "triangles": 15126,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 26,
+          "arch_samples": 102,
+          "triangle_ray_checks": 443,
+          "triangle_box_checks": 2
+        },
+        "medium": {
+          "triangles": 2046,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 26,
+          "arch_samples": 102,
+          "triangle_ray_checks": 443,
+          "triangle_box_checks": 2
+        },
+        "far": {
+          "triangles": 366,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 26,
+          "arch_samples": 102,
+          "triangle_ray_checks": 443,
+          "triangle_box_checks": 2
+        }
+      },
+      "uniform_world_units_per_metre": 0.0238,
+      "authored_origin_identity": true
+    },
+    "verona_bridge_junction": {
+      "lods": {
+        "detail": {
+          "triangles": 16604,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              5.252100944519043,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 522,
+          "clearance_volumes": 2,
+          "parapet_samples": 35,
+          "arch_samples": 102,
+          "triangle_ray_checks": 659,
+          "triangle_box_checks": 3
+        },
+        "medium": {
+          "triangles": 2408,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              5.252100944519043,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 522,
+          "clearance_volumes": 2,
+          "parapet_samples": 35,
+          "arch_samples": 102,
+          "triangle_ray_checks": 659,
+          "triangle_box_checks": 3
+        },
+        "far": {
+          "triangles": 520,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              5.252100944519043,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 522,
+          "clearance_volumes": 2,
+          "parapet_samples": 35,
+          "arch_samples": 102,
+          "triangle_ray_checks": 659,
+          "triangle_box_checks": 3
+        }
+      },
+      "uniform_world_units_per_metre": 0.0238,
+      "authored_origin_identity": true
+    },
+    "verona_bridge_end": {
+      "lods": {
+        "detail": {
+          "triangles": 17074,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 37,
+          "arch_samples": 102,
+          "triangle_ray_checks": 454,
+          "triangle_box_checks": 2
+        },
+        "medium": {
+          "triangles": 2274,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 37,
+          "arch_samples": 102,
+          "triangle_ray_checks": 454,
+          "triangle_box_checks": 2
+        },
+        "far": {
+          "triangles": 402,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -10.0
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.100000023841858
+            ]
+          ],
+          "deck_samples": 315,
+          "clearance_volumes": 1,
+          "parapet_samples": 37,
+          "arch_samples": 102,
+          "triangle_ray_checks": 454,
+          "triangle_box_checks": 2
+        }
+      },
+      "uniform_world_units_per_metre": 0.0238,
+      "authored_origin_identity": true
+    },
+    "verona_bridge_stairs": {
+      "lods": {
+        "detail": {
+          "triangles": 3764,
+          "bounds_xyz": [
+            [
+              -1.5,
+              1.2999999523162842,
+              -0.6499999761581421
+            ],
+            [
+              1.5,
+              5.252100944519043,
+              7.392521381378174
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            6.302521228790283
+          ],
+          "junction_landing_samples": 49,
+          "combined_road_clearance_volumes": 1,
+          "combined_triangle_ray_checks": 1203,
+          "triangle_ray_checks": 2455,
+          "triangle_box_checks": 2
+        },
+        "medium": {
+          "triangles": 756,
+          "bounds_xyz": [
+            [
+              -1.5,
+              1.2999998331069946,
+              -0.6499999761581421
+            ],
+            [
+              1.5,
+              5.252100944519043,
+              7.402521133422852
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            6.302521228790283
+          ],
+          "junction_landing_samples": 49,
+          "combined_road_clearance_volumes": 1,
+          "combined_triangle_ray_checks": 1203,
+          "triangle_ray_checks": 2455,
+          "triangle_box_checks": 2
+        },
+        "far": {
+          "triangles": 468,
+          "bounds_xyz": [
+            [
+              -1.5,
+              1.2999998331069946,
+              -0.6499999761581421
+            ],
+            [
+              1.5,
+              5.252100944519043,
+              7.402521133422852
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            6.302521228790283
+          ],
+          "junction_landing_samples": 49,
+          "combined_road_clearance_volumes": 1,
+          "combined_triangle_ray_checks": 1203,
+          "triangle_ray_checks": 2455,
+          "triangle_box_checks": 2
+        }
+      },
+      "uniform_world_units_per_metre": 0.0238,
+      "authored_origin_identity": true
+    },
+    "verona_bridge_descent": {
+      "lods": {
+        "detail": {
+          "triangles": 15388,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -18.403362274169922
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.091999888420105
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            -8.403361320495604
+          ],
+          "arch_samples": 102,
+          "descent_arch_ray_checks": 102,
+          "descent_arch_box_checks": 1,
+          "triangle_ray_checks": 2508,
+          "triangle_box_checks": 1
+        },
+        "medium": {
+          "triangles": 2500,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -18.403362274169922
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.1000001430511475
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            -8.403361320495604
+          ],
+          "arch_samples": 102,
+          "descent_arch_ray_checks": 102,
+          "descent_arch_box_checks": 1,
+          "triangle_ray_checks": 2508,
+          "triangle_box_checks": 1
+        },
+        "far": {
+          "triangles": 868,
+          "bounds_xyz": [
+            [
+              -5.252100944519043,
+              -3.0,
+              -18.403362274169922
+            ],
+            [
+              5.252100944519043,
+              3.0,
+              1.1000001430511475
+            ]
+          ],
+          "tread_samples": 1203,
+          "horizontal_surface_ray_checks": 1203,
+          "walking_end_heights_m": [
+            0.0,
+            -8.403361320495604
+          ],
+          "arch_samples": 102,
+          "descent_arch_ray_checks": 102,
+          "descent_arch_box_checks": 1,
+          "triangle_ray_checks": 2508,
+          "triangle_box_checks": 1
+        }
+      },
+      "uniform_world_units_per_metre": 0.0238,
+      "authored_origin_identity": true
+    }
+  },
+  "failures": []
+}
