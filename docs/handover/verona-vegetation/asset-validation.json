@@ -1,0 +1,782 @@
+{
+  "test": "verona_vegetation_assets",
+  "assets": [
+    {
+      "asset": "oak",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 1736,
+          "bounds_min_xyz_m": [
+            -3.6377410888671875,
+            -3.603541851043701,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.597454309463501,
+            3.4839565753936768,
+            8.056020736694336
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 752,
+          "bounds_min_xyz_m": [
+            -3.394728422164917,
+            -3.306068181991577,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.297333240509033,
+            3.1191065311431885,
+            8.056020736694336
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 336,
+          "bounds_min_xyz_m": [
+            -3.394728422164917,
+            -3.306068181991577,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.297333240509033,
+            3.1191065311431885,
+            8.056020736694336
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8855855855855855
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8810810810810811
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8966756513926325
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8924731182795699
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8613801452784504
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8613801452784504
+        }
+      ]
+    },
+    {
+      "asset": "cypress",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 1152,
+          "bounds_min_xyz_m": [
+            -0.7393748164176941,
+            -0.7906551957130432,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.8326565623283386,
+            0.7383551001548767,
+            8.0
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 280,
+          "bounds_min_xyz_m": [
+            -0.6877647638320923,
+            -0.718396008014679,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.8326565623283386,
+            0.6908863186836243,
+            8.0
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 100,
+          "bounds_min_xyz_m": [
+            -0.7384663224220276,
+            -0.6330328583717346,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.8326565623283386,
+            0.7230463027954102,
+            8.0
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9206576125804146
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9021970233876683
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9041379310344828
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8767029972752044
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8955676988463873
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8126506024096386
+        }
+      ]
+    },
+    {
+      "asset": "stone_pine",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 2190,
+          "bounds_min_xyz_m": [
+            -4.101568698883057,
+            -3.8394265174865723,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            4.135477542877197,
+            3.7849926948547363,
+            7.946178913116455
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 1018,
+          "bounds_min_xyz_m": [
+            -4.101566791534424,
+            -3.839409351348877,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            4.1354756355285645,
+            3.5512595176696777,
+            7.946178913116455
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 392,
+          "bounds_min_xyz_m": [
+            -4.101566791534424,
+            -3.839409351348877,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            4.1354756355285645,
+            3.5512595176696777,
+            7.946178913116455
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.892459826946848
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8728395061728395
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8893129770992366
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8645569620253165
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9128605769230769
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9128605769230769
+        }
+      ]
+    },
+    {
+      "asset": "olive",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 2154,
+          "bounds_min_xyz_m": [
+            -2.85902738571167,
+            -2.4302926063537598,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            2.7670934200286865,
+            2.891387462615967,
+            5.653162956237793
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 990,
+          "bounds_min_xyz_m": [
+            -2.6816844940185547,
+            -2.175557851791382,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            2.5362069606781006,
+            2.5898609161376953,
+            5.583800792694092
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 372,
+          "bounds_min_xyz_m": [
+            -2.6816844940185547,
+            -2.175557851791382,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            2.5362069606781006,
+            2.5898609161376953,
+            5.583800792694092
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8838289962825279
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8779123951537745
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8996101364522417
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8894324853228963
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8639951426836673
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8639951426836673
+        }
+      ]
+    },
+    {
+      "asset": "willow",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 3198,
+          "bounds_min_xyz_m": [
+            -3.369555711746216,
+            -2.9561502933502197,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.2349188327789307,
+            3.198627233505249,
+            7.808152675628662
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 1102,
+          "bounds_min_xyz_m": [
+            -3.3563272953033447,
+            -2.9069786071777344,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.1462595462799072,
+            3.0685224533081055,
+            7.808152675628662
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 696,
+          "bounds_min_xyz_m": [
+            -3.3563272953033447,
+            -2.9069786071777344,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            3.078226089477539,
+            2.858006715774536,
+            7.808152675628662
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.915929203539823
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8591445427728613
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9401586157173756
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8745493871665465
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9665099882491187
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9059929494712103
+        }
+      ]
+    },
+    {
+      "asset": "shrub",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 850,
+          "bounds_min_xyz_m": [
+            -0.8957760334014893,
+            -0.9121039509773254,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.9462058544158936,
+            0.9156319499015808,
+            1.422683835029602
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 250,
+          "bounds_min_xyz_m": [
+            -0.824331521987915,
+            -0.8372232913970947,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.9252371788024902,
+            0.8352871537208557,
+            1.422683835029602
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 220,
+          "bounds_min_xyz_m": [
+            -0.824331521987915,
+            -0.8372232913970947,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.9252371788024902,
+            0.8352871537208557,
+            1.422683835029602
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.833241607044579
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.8304898183819482
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8919213973799127
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.8913755458515283
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8874617737003058
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8874617737003058
+        }
+      ]
+    },
+    {
+      "asset": "reeds",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 1188,
+          "bounds_min_xyz_m": [
+            -0.9231194257736206,
+            -0.9199880361557007,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.933262288570404,
+            0.91688072681427,
+            1.6008384227752686
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 948,
+          "bounds_min_xyz_m": [
+            -0.9231194257736206,
+            -0.9199880361557007,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.9076957702636719,
+            0.91688072681427,
+            1.6008384227752686
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 696,
+          "bounds_min_xyz_m": [
+            -0.9231194257736206,
+            -0.9199880361557007,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.9076957702636719,
+            0.91688072681427,
+            1.6008384227752686
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9932942162615256
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9634551495016611
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9983619983619983
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9656301145662848
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9732905982905983
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.7980769230769231
+        }
+      ]
+    },
+    {
+      "asset": "courtyard_planter",
+      "lods": [
+        {
+          "lod": "detail",
+          "triangles": 936,
+          "bounds_min_xyz_m": [
+            -0.5400440096855164,
+            -0.5579854846000671,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.5842559933662415,
+            0.5463281273841858,
+            2.2780115604400635
+          ]
+        },
+        {
+          "lod": "medium",
+          "triangles": 476,
+          "bounds_min_xyz_m": [
+            -0.5,
+            -0.5084624886512756,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.5439078211784363,
+            0.5140844583511353,
+            2.2780115604400635
+          ]
+        },
+        {
+          "lod": "far",
+          "triangles": 376,
+          "bounds_min_xyz_m": [
+            -0.5,
+            -0.5084624886512756,
+            0.0
+          ],
+          "bounds_max_xyz_m": [
+            0.5439078211784363,
+            0.5140844583511353,
+            2.2780115604400635
+          ]
+        }
+      ],
+      "silhouette_checks": [
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9156850588964662
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            2
+          ],
+          "intersection_over_union": 0.9156850588964662
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9367710251688153
+        },
+        {
+          "lod": "far",
+          "axes": [
+            1,
+            2
+          ],
+          "intersection_over_union": 0.9361963190184049
+        },
+        {
+          "lod": "medium",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.9057750759878419
+        },
+        {
+          "lod": "far",
+          "axes": [
+            0,
+            1
+          ],
+          "intersection_over_union": 0.8899026763990268
+        }
+      ]
+    }
+  ],
+  "failures": []
+}

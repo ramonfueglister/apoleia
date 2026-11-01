@@ -10,6 +10,11 @@ render_mode skip_vertex_transform, cull_back, diffuse_lambert, specular_disabled
 #include "res://shaders/tile_terrain.gdshaderinc"
 #include "res://shaders/tile_props.gdshaderinc"
 
+// Local native vegetation only hides slots successfully installed in its mask.
+uniform bool verona_vegetation_active = false;
+uniform sampler2D verona_vegetation_mask : filter_nearest, repeat_disable;
+uniform ivec2 verona_vegetation_origin;
+uniform int verona_vegetation_size = 64;
 uniform int prop_kind = 0;     // 0 trees (every kind), 3 house (a Roman lot model), 5 terrace under a lot on a ramp
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
@@ -105,6 +110,15 @@ void vertex() {
 	ivec2 px = local * 3 + ivec2(slot % 3, slot / 3) + ivec2(house ? place_tree_w : 0, 0);
 	vec4 d = !listed ? vec4(0.0, 0.0, 0.0, -1.0) : place_ready ? texelFetch(place_tex, px, 0) : tt_prop_place(t, slot, slots, house);
 	bool show = d.w >= 0.0;
+	if (!house && sub_tiles && verona_vegetation_active) {
+		ivec2 vt = t - verona_vegetation_origin;
+		if (all(greaterThanEqual(vt, ivec2(0))) && all(lessThan(vt, ivec2(verona_vegetation_size)))) {
+			vec2 replacement = texelFetch(verona_vegetation_mask, vt * 3 + ivec2(slot % 3, slot / 3), 0).rg;
+			// If simulation changes this slot's kind, use legacy immediately
+			// until the next compact native list refresh, never a wrong model.
+			show = show && !(replacement.r > 0.5 && int(replacement.g * 255.0 + 0.5) == int(floor(d.w)) + 1);
+		}
+	}
 	road = 0.0;
 	olive = 0.0;
 	plan_top = 0.0;

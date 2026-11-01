@@ -1,0 +1,70 @@
+{
+  "slug": "olive",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 2154,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -2.85902738571167,
+          -2.4302926063537598,
+          0.0
+        ],
+        [
+          2.7670934200286865,
+          2.891387462615967,
+          5.653162956237793
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 990,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -2.6816844940185547,
+          -2.175557851791382,
+          0.0
+        ],
+        [
+          2.5362069606781006,
+          2.5898609161376953,
+          5.583800792694092
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 372,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -2.6816844940185547,
+          -2.175557851791382,
+          0.0
+        ],
+        [
+          2.5362069606781006,
+          2.5898609161376953,
+          5.583800792694092
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -2.85902738571167,
+      -2.4302926063537598,
+      0.0
+    ],
+    [
+      2.7670934200286865,
+      2.891387462615967,
+      5.653162956237793
+    ]
+  ]
+}

@@ -1,0 +1,418 @@
+{
+  "atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+  "atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+  "failures": [],
+  "fallback": {
+    "active_lod": 1,
+    "enabled": false,
+    "name": "blocked-fallback",
+    "native_instances": 0,
+    "refresh_count": 12,
+    "species_counts": {
+      "courtyard_planter": 17,
+      "cypress": 47,
+      "oak": 1115,
+      "olive": 12,
+      "reeds": 31,
+      "shrub": 428,
+      "stone_pine": 10,
+      "willow": 9
+    },
+    "submitted_native_triangles": 0
+  },
+  "game_frames": 830,
+  "pages_after": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+  "pages_before": "be7d63c08e2b6b57d7d1c20a7bee3e5c6c0c48ac2287c1891963687dcd822922",
+  "pan_out": {
+    "active_lod": 1,
+    "enabled": false,
+    "name": "pan-out",
+    "native_instances": 0,
+    "refresh_count": 6,
+    "species_counts": {
+      "courtyard_planter": 0,
+      "cypress": 47,
+      "oak": 3825,
+      "olive": 12,
+      "reeds": 0,
+      "shrub": 35,
+      "stone_pine": 10,
+      "willow": 9
+    },
+    "submitted_native_triangles": 0
+  },
+  "phase": "validated",
+  "recovered": {
+    "active_lod": 1,
+    "changed_kind_gpu_slots": 0,
+    "enabled": true,
+    "hidden_gpu_slots": 0,
+    "max_cpu_snapshot_position_delta_km": 0.0,
+    "name": "recovered",
+    "native_instances": 1657,
+    "placement_basis": "Current GPU slot texture and imported vertex bounds; CPU snapshot positions are diagnostic, not the renderer authority.",
+    "refresh_count": 13,
+    "species_counts": {
+      "courtyard_planter": 17,
+      "cypress": 47,
+      "oak": 1111,
+      "olive": 12,
+      "reeds": 31,
+      "shrub": 420,
+      "stone_pine": 10,
+      "willow": 9
+    },
+    "submitted_native_instances": 1657,
+    "submitted_native_triangles": 1023090,
+    "submitted_species_counts": {
+      "courtyard_planter": 17,
+      "cypress": 47,
+      "oak": 1111,
+      "olive": 12,
+      "reeds": 31,
+      "shrub": 420,
+      "stone_pine": 10,
+      "willow": 9
+    },
+    "checked_placement_count": 1657
+  },
+  "renderer": "Apple M3 Pro (Apple9)",
+  "test": "verona_vegetation_check",
+  "views": [
+    {
+      "active_lod": 0,
+      "changed_kind_gpu_slots": 0,
+      "draws": {
+        "median": 2670.0,
+        "p95": 2670.0
+      },
+      "enabled": true,
+      "frame_ms": {
+        "median": 13.994,
+        "p95": 15.199
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "hidden_gpu_slots": 0,
+      "max_cpu_snapshot_position_delta_km": 0.0,
+      "name": "width-1.5",
+      "native_instances": 70,
+      "placement_basis": "Current GPU slot texture and imported vertex bounds; CPU snapshot positions are diagnostic, not the renderer authority.",
+      "primitives": {
+        "median": 4958028.0,
+        "p95": 4958028.0
+      },
+      "refresh_count": 2,
+      "render_cpu_ms": {
+        "median": 1.52100002765656,
+        "p95": 1.86899995803833
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/width-1.5.png",
+      "species_counts": {
+        "courtyard_planter": 4,
+        "cypress": 27,
+        "oak": 22,
+        "olive": 3,
+        "reeds": 3,
+        "shrub": 10,
+        "stone_pine": 1
+      },
+      "submitted_native_instances": 70,
+      "submitted_native_triangles": 93756,
+      "submitted_species_counts": {
+        "courtyard_planter": 4,
+        "cypress": 27,
+        "oak": 22,
+        "olive": 3,
+        "reeds": 3,
+        "shrub": 10,
+        "stone_pine": 1,
+        "willow": 0
+      },
+      "terrain_level": 0,
+      "width_km": 1.5,
+      "checked_placement_count": 70
+    },
+    {
+      "active_lod": 1,
+      "changed_kind_gpu_slots": 0,
+      "draws": {
+        "median": 3357.0,
+        "p95": 3357.0
+      },
+      "enabled": true,
+      "frame_ms": {
+        "median": 18.178,
+        "p95": 20.537
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "hidden_gpu_slots": 12,
+      "max_cpu_snapshot_position_delta_km": 0.0,
+      "name": "width-5.0",
+      "native_instances": 1657,
+      "placement_basis": "Current GPU slot texture and imported vertex bounds; CPU snapshot positions are diagnostic, not the renderer authority.",
+      "primitives": {
+        "median": 8532534.0,
+        "p95": 8532534.0
+      },
+      "refresh_count": 4,
+      "render_cpu_ms": {
+        "median": 1.80599999427795,
+        "p95": 2.06100010871887
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/width-5.0.png",
+      "species_counts": {
+        "courtyard_planter": 17,
+        "cypress": 47,
+        "oak": 1111,
+        "olive": 12,
+        "reeds": 31,
+        "shrub": 420,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "submitted_native_instances": 1669,
+      "submitted_native_triangles": 1028098,
+      "submitted_species_counts": {
+        "courtyard_planter": 17,
+        "cypress": 47,
+        "oak": 1115,
+        "olive": 12,
+        "reeds": 31,
+        "shrub": 428,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "terrain_level": 0,
+      "width_km": 5.0,
+      "checked_placement_count": 1657
+    },
+    {
+      "active_lod": 2,
+      "changed_kind_gpu_slots": 0,
+      "draws": {
+        "median": 1466.0,
+        "p95": 1466.0
+      },
+      "enabled": true,
+      "frame_ms": {
+        "median": 14.828,
+        "p95": 15.069
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "hidden_gpu_slots": 0,
+      "max_cpu_snapshot_position_delta_km": 0.0,
+      "name": "width-12.0",
+      "native_instances": 3938,
+      "placement_basis": "Current GPU slot texture and imported vertex bounds; CPU snapshot positions are diagnostic, not the renderer authority.",
+      "primitives": {
+        "median": 3428127.0,
+        "p95": 3428127.0
+      },
+      "refresh_count": 6,
+      "render_cpu_ms": {
+        "median": 1.19599997997284,
+        "p95": 1.28100001811981
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/width-12.0.png",
+      "species_counts": {
+        "cypress": 47,
+        "oak": 3825,
+        "olive": 12,
+        "shrub": 35,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "submitted_native_instances": 3938,
+      "submitted_native_triangles": 1312248,
+      "submitted_species_counts": {
+        "courtyard_planter": 0,
+        "cypress": 47,
+        "oak": 3825,
+        "olive": 12,
+        "reeds": 0,
+        "shrub": 35,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "terrain_level": 0,
+      "width_km": 12.0,
+      "checked_placement_count": 3938
+    },
+    {
+      "active_lod": 2,
+      "draws": {
+        "median": 1296.0,
+        "p95": 1296.0
+      },
+      "enabled": false,
+      "frame_ms": {
+        "median": 15.388,
+        "p95": 15.764
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "name": "width-24.0",
+      "native_instances": 0,
+      "primitives": {
+        "median": 3286189.0,
+        "p95": 3286189.0
+      },
+      "refresh_count": 6,
+      "render_cpu_ms": {
+        "median": 0.799000024795532,
+        "p95": 0.879999995231628
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/width-24.0.png",
+      "species_counts": {
+        "courtyard_planter": 0,
+        "cypress": 47,
+        "oak": 3825,
+        "olive": 12,
+        "reeds": 0,
+        "shrub": 35,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "submitted_native_triangles": 0,
+      "terrain_level": 0,
+      "width_km": 24.0
+    },
+    {
+      "active_lod": 2,
+      "draws": {
+        "median": 478.0,
+        "p95": 478.0
+      },
+      "enabled": false,
+      "frame_ms": {
+        "median": 14.117,
+        "p95": 14.631
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "name": "width-60.0",
+      "native_instances": 0,
+      "primitives": {
+        "median": 4371965.0,
+        "p95": 4371965.0
+      },
+      "refresh_count": 6,
+      "render_cpu_ms": {
+        "median": 0.35699999332428,
+        "p95": 0.470999985933304
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/width-60.0.png",
+      "species_counts": {
+        "courtyard_planter": 0,
+        "cypress": 47,
+        "oak": 3825,
+        "olive": 12,
+        "reeds": 0,
+        "shrub": 35,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "submitted_native_triangles": 0,
+      "terrain_level": 1,
+      "width_km": 60.0
+    },
+    {
+      "active_lod": 1,
+      "changed_kind_gpu_slots": 0,
+      "draws": {
+        "median": 3357.0,
+        "p95": 3357.0
+      },
+      "enabled": true,
+      "frame_ms": {
+        "median": 18.194,
+        "p95": 20.961
+      },
+      "gpu_ms": {
+        "median": 0.0,
+        "p95": 0.0
+      },
+      "hidden_gpu_slots": 12,
+      "max_cpu_snapshot_position_delta_km": 0.0,
+      "name": "return",
+      "native_instances": 1657,
+      "placement_basis": "Current GPU slot texture and imported vertex bounds; CPU snapshot positions are diagnostic, not the renderer authority.",
+      "primitives": {
+        "median": 8532534.0,
+        "p95": 8542550.0
+      },
+      "refresh_count": 7,
+      "render_cpu_ms": {
+        "median": 1.807000041008,
+        "p95": 2.0460000038147
+      },
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/return.png",
+      "species_counts": {
+        "courtyard_planter": 17,
+        "cypress": 47,
+        "oak": 1111,
+        "olive": 12,
+        "reeds": 31,
+        "shrub": 420,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "submitted_native_instances": 1669,
+      "submitted_native_triangles": 1028098,
+      "submitted_species_counts": {
+        "courtyard_planter": 17,
+        "cypress": 47,
+        "oak": 1115,
+        "olive": 12,
+        "reeds": 31,
+        "shrub": 428,
+        "stone_pine": 10,
+        "willow": 9
+      },
+      "terrain_level": 0,
+      "width_km": 5.0,
+      "checked_placement_count": 1657
+    },
+    {
+      "name": "closeup-stone_pine",
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/closeup-stone_pine.png",
+      "target": [
+        -670.14990234375,
+        -494.458618164062
+      ],
+      "width_km": 0.65
+    },
+    {
+      "name": "closeup-willow",
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/closeup-willow.png",
+      "target": [
+        -671.12353515625,
+        -492.308227539062
+      ],
+      "width_km": 0.65
+    },
+    {
+      "name": "closeup-courtyard_planter",
+      "screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-vegetation/validated/closeup-courtyard_planter.png",
+      "target": [
+        -673.271484375,
+        -494.471557617188
+      ],
+      "width_km": 0.65
+    }
+  ],
+  "full_placement_evidence": "game-validation.json.gz"
+}

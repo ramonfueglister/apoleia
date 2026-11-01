@@ -1,0 +1,70 @@
+{
+  "slug": "courtyard_planter",
+  "status": "implementiert",
+  "metres": true,
+  "origin": "ground at 0,0,0",
+  "lod_method": "native_silhouette",
+  "provenance": "Original authored Blender geometry inspired by accepted generated concept, no third-party assets",
+  "lods": {
+    "detail": {
+      "triangles": 936,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.5400440096855164,
+          -0.5579854846000671,
+          0.0
+        ],
+        [
+          0.5842559933662415,
+          0.5463281273841858,
+          2.2780115604400635
+        ]
+      ]
+    },
+    "medium": {
+      "triangles": 476,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.5,
+          -0.5084624886512756,
+          0.0
+        ],
+        [
+          0.5439078211784363,
+          0.5140844583511353,
+          2.2780115604400635
+        ]
+      ]
+    },
+    "far": {
+      "triangles": 376,
+      "material_batches": 1,
+      "bounds_xyz": [
+        [
+          -0.5,
+          -0.5084624886512756,
+          0.0
+        ],
+        [
+          0.5439078211784363,
+          0.5140844583511353,
+          2.2780115604400635
+        ]
+      ]
+    }
+  },
+  "source_bounds_xyz": [
+    [
+      -0.5400440096855164,
+      -0.5579854846000671,
+      0.0
+    ],
+    [
+      0.5842559933662415,
+      0.5463281273841858,
+      2.2780115604400635
+    ]
+  ]
+}
