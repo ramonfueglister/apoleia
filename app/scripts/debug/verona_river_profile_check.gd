@@ -2,8 +2,8 @@ extends "res://scripts/debug/verona_bank_check.gd"
 ## Baseline audit: actual corner cache, actual river masks, rendered triangle planes.
 ## This deliberately reports geometry defects; it does not guess hydrological flow.
 func run() -> void:
-	if "--verona-river-prototype" in OS.get_cmdline_user_args():
-		push_error("Baseline requires default rendering without the prototype flag");quit(1);return
+	if not "--legacy-verona-river" in OS.get_cmdline_user_args():
+		push_error("Baseline requires --legacy-verona-river");quit(1);return
 	output=ProjectSettings.globalize_path("res://../build/verona-river/baseline")
 	DirAccess.make_dir_recursive_absolute(output)
 	report={"test":"verona_river_profile_check","status":"observed baseline","failures":[],"views":[]}
@@ -11,7 +11,7 @@ func run() -> void:
 	game=Landscape.instantiate();root.add_child(game)
 	while game._frame<5: await process_frame
 	terrain=game.terrain
-	check(terrain._river==null,"Default game must not create experimental channel")
+	check(terrain._river==null,"Legacy comparison must not create the corrected channel")
 	var clock=game.get_node("GameClock");clock.paused=true;clock._apply()
 	focus=terrain.world_min+Vector2(18459,6917)*.25
 	view(5.0);await settle();read_gpu()

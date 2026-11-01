@@ -1,58 +1,99 @@
-# Verona channel validation
+# Verona river correction
 
-Status: **erforscht**. The narrow replacement strip is an opt-in diagnostic
-prototype, **rejected for production visual quality**: lowering water while
-retaining the existing high terraces creates a deep vertical canyon. Default
-rendering retains the original river. The physical uphill defect remains open.
-A coherent valley-corridor correction needs broader terrain/shore design.
+Status: **validiert** for the 47-segment near-Verona reach, enabled by default.
+The rest of the world's rivers and farther map rendering are outside this fix.
+`--legacy-verona-river` retains the previous renderer for reproducible comparisons.
 
-See [baseline-audit.md](baseline-audit.md) for observed defect, direction inference,
-source limits and reproduction. The committed `baseline-report.json`,
-`baseline-ordered-profile.json`, and `baseline.png` preserve the original
-unmodified-water evidence even if the build directory is reused.
+## Result
 
-## Independent checks
+The old fragment-coloured river inherited terrain humps and transverse slopes.
+The replacement has a fixed downhill water surface and sloped banks, with the
+same geographic centreline. Buildings, bridge decks and atlas cells stay in place.
+Bank props and both native and legacy vegetation use the same bank triangles.
+The camera uses the same correction with its existing approximate terrain sampler.
+The previous narrow-wall experiment remains archived as `prototype-rejected.png`;
+it is not the accepted scene.
 
-`app/scripts/debug/river_mesh_audit.gd` intersects the actual uploaded water
-triangles barycentrically. It does not call the runtime profile-height function.
-`river_mesh_audit_check.gd` checks this inspector against downhill, uphill,
-transverse-slope and missing-geometry fixtures at Verona's coordinate magnitude;
-headless run passed on 2026-11-01.
+The profile uses the preserved GPU terrain evidence across the full water apron,
+then lower-only, grid-aligned conditioning and level bend buffers. This is an
+explicit display repair, not a surveyed historical water level. Downstream order
+is inferred from the Adige source geometry and baked topography. All 941 XZ
+stations and both endpoint heights (0.6 / 0.3 world-km) are unchanged. Relative to
+the first narrow-sample running minimum, conditioning lowers at most 0.107171
+world-km (4.50 model metres); no water station is raised. This additional lowering
+is localized around the previously sloping bends. See [implementation](../../kit2/VERONA_RIVER.md).
 
-`verona_river_check.gd` is the actual-renderer harness. It checks:
+## Geometry and contact evidence
 
-- Water vertex colour selects the shader branch without vertical displacement.
-- Source-ordered centreline and interior cross-sections intersect uploaded water
-  triangles without gaps, rising sections, cross tilt or overlap disagreement.
-- All profile stations have geometry, including joins; finite endpoint masks stop at their planes and the cross-sections join the
-  unchanged water surface.
-- Terrain-cut activation agrees with channel visibility across 1.5/5/12/24-km views.
+[Actual-game corridor audit](corridor-validation.json), zero failures:
 
-Numerical tolerance is 0.0001 world-km (approximately 4.2mm in model metres),
-separate from the larger physical defect. The original measurement's successful
-exit is not a water-correctness result. The helper fixture success is not an
-actual-game result. This harness does not by itself establish bank closure,
-bridge arch clearance, or visual quality; those need explicit checks and images.
+- 628 inner shoreline samples: maximum water/bank join error 0.000774 model metres;
+  no missing geometry or overlapping-water height disagreement.
+- 4,548 outer cell-edge samples: maximum join error 1.05 model centimetres;
+  no missing geometry. The cutout and replacement share the same cell mask.
+- 12,491 bank contact vertices across all three LODs: maximum difference
+  0.000111 model metres from the reconstructed rendered triangles.
+- 30 affected tree roots: maximum difference 2.43 model centimetres, within the
+  independently calculated precision bound of the actual RGBAH placement texture.
+  Positions inside the corridor are explicitly quantized before their heights
+  are sampled, so storing the position cannot subsequently move the root.
+- 1,198 bridge foundation samples, 289 affected by the lowered ground: no newly
+  exposed feet. No bridge mesh alteration was necessary.
+- 98 protected atlas parcels and 80 instantiated building bounds are preserved.
+  Five prepared legacy bridge-plinth records are confirmed hidden by the existing
+  replacement masks; no visible legacy house is left over lowered ground.
 
-Final output is separate: `build/verona-river/final`. Run with the normal renderer:
+The bank audit reconstructs shader-displaced vertices from actual GPU corner
+readback and the shared height formula, then independently intersects triangles.
+It is not direct GPU post-vertex-buffer readback. Screenshots and shader-error
+log inspection complement the numerical checks. The final water regression also
+checks its actual uploaded water mesh, endpoint cross-sections, four zoom widths
+and return to close views. See `water-validation.json` and the game images.
+
+## Appearance and scope
+
+The accepted game views are `city.png`, `north-bridge.png` and `bank-closeup.png`.
+The previous steep-wall prototype is retained only as diagnostic history.
+Small support-triangle shading is smoothed using the underlying bank profile;
+this changes lighting, not the geometry or its contact tests. Original gravel,
+stones, reeds and grass remain integrated into the local bank pilot.
+
+The channel is active in quarter-tile rendering. Farther map views retain their
+existing simplified river representation. This is not a global hydrology bake
+and does not claim to fix every river in the game. The near/far switch is retained
+as an explicit scope boundary. There is no new periodic GPU readback in gameplay.
+
+## Reproduction
 
 ```sh
-Godot --path app --script res://scripts/debug/verona_river_check.gd -- --verona-river-prototype
+build/verona-venv/bin/python tools/tests/check_verona_river_profile.py
+build/verona-venv/bin/python tools/tests/check_verona_corridor_clearance.py
+Godot --path app --script res://scripts/debug/verona_corridor_check.gd
+Godot --path app --script res://scripts/debug/verona_river_check.gd
+Godot --path app --script res://scripts/debug/verona_river_perf.gd
+Godot --path app --script res://scripts/debug/verona_river_perf.gd -- --legacy-verona-river
+Godot --path app --script res://scripts/debug/verona_river_profile_check.gd -- --legacy-verona-river
 ```
 
-The initial GPU diagnostic had a harness bug: nonindexed SurfaceTool arrays
-returned null indices, which aborted extraction and produced 1370 secondary gap
-messages. This was fixed explicitly and the helper now tests extraction of a
-real nonindexed SurfaceTool mesh. Those 1370 messages are not physical river
-measurements. The corrected actual-renderer run completed with zero check failures. Its
-[geometry report](prototype-geometry.json) and [rejected game view](prototype-rejected.png)
-are preserved. The profile check covers 423 centreline stations across 47 segments;
-no numeric pass overrides the visual rejection. Bank closure, bridge clearance
-and a usable valley shape remain unvalidated.
+Source constraints, the cropped GPU corner fixture and both generators are in
+the repository. `baseline-audit.md` and the original baseline JSON/images preserve
+the defect evidence. Performance results are reported separately below; no speedup
+is claimed.
 
-## Default-game safeguard
+The explicit legacy-mode run also passed and all 47 GPU-derived river segment
+records matched the preserved original baseline exactly. Final GPU logs contained
+no script or shader compilation errors.
 
-The baseline harness was rerun without the prototype flag after the final changes.
-It verified `terrain._river == null`, exited successfully, and all 47 GPU-derived
-segment/sample records matched the preserved original baseline exactly. The normal
-game therefore retains its previous river geometry; the uphill defect is still open.
+## Paired rendering cost
+
+Apple M3 Pro, Metal Forward+, 1440×1000, 120 actual rendered frames per width,
+consecutive legacy/channel runs with warmed shaders. Values are wall-clock frame
+times, not GPU timer measurements. Background load varies; this is no speedup claim.
+
+| Width | Legacy median / p95 | Channel median / p95 |
+|---|---|---|
+| 5 km | 32.89 / 40.83 ms | 36.67 / 48.48 ms |
+| 12 km | 27.28 / 37.04 ms | 33.06 / 44.43 ms |
+
+[Legacy report](performance-legacy.json) · [Channel report](performance-channel.json).
+The accepted correction adds approximately 4–6 ms to the median in this paired run.

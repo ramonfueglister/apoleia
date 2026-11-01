@@ -16,8 +16,8 @@ func distance_to_channel(p: Vector2) -> float:
 func run() -> void:
 	output=ProjectSettings.globalize_path("res://../build/verona-river/final")
 	DirAccess.make_dir_recursive_absolute(output)
-	report={"test":"verona_river_check","status":"opt-in rejected visual prototype diagnostic","failures":[],"views":[]}
-	check(OS.get_cmdline_user_args().has("--verona-river-prototype"),"Explicit --verona-river-prototype argument required for this diagnostic")
+	report={"test":"verona_river_check","status":"default Verona channel regression","failures":[],"views":[]}
+	check(not OS.get_cmdline_user_args().has("--legacy-verona-river"),"Channel regression requires the default renderer")
 	root.size=Vector2i(1440,1000);game=Landscape.instantiate();root.add_child(game)
 	while game._frame<5:await process_frame
 	terrain=game.terrain;channel=terrain._river
@@ -87,5 +87,9 @@ func run() -> void:
 		check(bool(terrain._terrain_material.get_shader_parameter("verona_river_active"))==channel.enabled,"Terrain cut and channel visibility disagree")
 		root.get_texture().get_image().save_png(output.path_join("width-"+str(width_km)+".png"))
 		report.views.append({"width":width_km,"active":channel.enabled})
+	for shot in [{"name":"bank-closeup","parcel":Vector2(18456,6915.7),"width":1.5},{"name":"north-bridge","parcel":Vector2(18459.5,6916),"width":2.2}]:
+		focus=terrain.world_min+shot.parcel*.25;view(shot.width);await settle()
+		check(channel.enabled,"Channel did not reactivate after zoom return")
+		root.get_texture().get_image().save_png(output.path_join(shot.name+".png"))
 	report.assertions=assertions;save();print("VERONA_RIVER_CHECK_DONE failures=",report.failures.size())
 	quit(0 if report.failures.is_empty() else 1)

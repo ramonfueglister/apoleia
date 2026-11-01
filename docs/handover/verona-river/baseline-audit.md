@@ -12,7 +12,7 @@ bank-detail QA verified prop contact and unchanged terrain, not physical water.
 Run the real renderer (not headless):
 
 ```sh
-Godot --path app --script res://scripts/debug/verona_river_profile_check.gd
+Godot --path app --script res://scripts/debug/verona_river_profile_check.gd -- --legacy-verona-river
 python tools/tests/analyze_verona_river_profile.py
 ```
 

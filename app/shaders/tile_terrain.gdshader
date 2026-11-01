@@ -577,7 +577,7 @@ vec3 contour_land_soft(vec2 p, float band, float px_km, out int g) {
 }
 
 void fragment() {
-	if(verona_river_active && vr_distance(world_pos.xz)<.077) { discard; }
+	if(vr_inside(world_pos.xz)) { discard; }
 	int ground = ground_bits & 15;
 	int ground_alt = (ground_bits >> 4) & 15;
 	int ground_tip = (ground_bits >> 8) - 1;

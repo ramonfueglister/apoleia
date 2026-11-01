@@ -1,6 +1,6 @@
 # Nordbrücken-Ufer – erster Pilot
 
-Status: Uferdetails für diesen kurzen Abschnitt validiert; physikalischer Flussverlauf offen (Nutzerbefund vom 01.11.2026). Die [angenommene Bildstudie](riverbank-concept.png) ist von den [Blender-Modellen](blender-models.png) und den echten Spielaufnahmen getrennt.
+Historischer Prüfstand des ursprünglichen Detailpilots. Der damals offene Flussfehler wird durch die anschliessende [Verona-Korridorkorrektur](../verona-river/validation.md) behandelt. Die [angenommene Bildstudie](riverbank-concept.png) ist von den [Blender-Modellen](blender-models.png) und den echten Spielaufnahmen getrennt.
 
 ## Ergebnis
 

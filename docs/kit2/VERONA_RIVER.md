@@ -1,67 +1,95 @@
-# Verona river height repair
+# Verona river corridor
 
-Status: `offen` for a visually acceptable fix; `implementiert` experimental
-geometry, **not enabled in the normal game and not ready to merge**.
+Status: `validiert` for the bounded near-Verona reach. Enabled in the normal game;
+`--legacy-verona-river` selects the unchanged baseline for comparison.
+See [validation evidence](../handover/verona-river/validation.md).
+The previous narrow vertical-bank prototype was rejected; its evidence remains in
+`docs/handover/verona-river/prototype-rejected.png`.
 
-The existing river is painted onto ordinary terrain triangles. Consequently its
-water inherits both longitudinal bumps and cross-channel slope. This is a real
-geometry defect, not merely an animation direction issue. The GPU baseline audit
-is in `docs/handover/verona-river/`.
+## Observed defect and fixed geographic extent
 
-## Explicit prototype
+The old blue river is painted onto terrain triangles and therefore inherits
+longitudinal humps and cross-channel slope. The GPU audit preserves 47 connected
+segments and 941 ordered stations through Verona. Downstream order is inferred
+from the real Adige source geometry and baked topography, not supplied flow metadata.
+No centreline coordinates, buildings, bridge decks or atlas cells are relocated.
 
-Launch with `-- --verona-river-prototype` to create `terrain._river`. Without this
-argument there is no channel node, profile file read, mesh creation or update.
-The terrain shader's replacement branch remains disabled. Existing terrain,
-bridges and bank assets are unchanged by default.
+The independent water ribbon retains a fixed lower-only conditioned profile.
+This is a deliberate repair of the miniature terrain display, not a claim to
+surveyed historical water elevations. The profile never changes with the camera.
 
-`tools/build_verona_river_profile.py` consumes the ordered GPU baseline and freezes
-a lower-only running minimum across 941 centre/transverse samples of one unbranched
-47-segment Verona reach. It does not claim surveyed water elevations. Downstream
-order is inferred from the source Adige line's alpine and sea endpoints; the input
-GeoJSON has no explicit flow metadata. The generated profile is fixed and does not
-change with camera movement.
+The original audit sampled only 0.05 world km to either side, while water extends
+0.075 world km. The actual GPU corner fixture therefore also constrains a
+0.125-world-km apron: enough for the water miter and adjacent shore-grid vertices.
+This prevents a low bank vertex from falling below the water. The cropped source
+is `docs/handover/verona-river/gpu-corridor-corners.json`.
 
-The prototype draws an independent water ribbon and narrow shore faces. Its
-terrain cutout and ribbon share miter joins and longitudinal endpoint planes.
-Water vertices are static; outer shore vertices sample the same cached terrain
-triangles used by the existing scene. Missing cache samples are rejected, not
-clamped into false heights. The bridge deck and dry ground are not repositioned.
+The builder then uses grid-aligned linear height spans and level buffers extending
+at least 0.10 world km along either side of every bend, with a 0.25-world-km upstream
+approach. Overlapping ribbon sections consequently agree in height. These are
+conservative display-conditioning choices, not measured historical river pools.
+All 941 geographic points and both endpoint heights (0.6 / 0.3 world km) remain
+unchanged; every new water height is at or below the original running-minimum
+profile. Maximum additional lowering is 0.107171 world km. The source constraint
+check validates those properties independently of visual acceptance.
 
-## Why this cannot be accepted as the fix
+## Shared valley surface
 
-Lowering only water beneath the existing artificial terrace bumps produces very
-high, nearly vertical bank faces. The first real screenshot shows a canyon around
-the northern bend. Correcting numerical downstream slope does not make this a
-satisfactory game scene. Initial corner slit defects were corrected by matching
-miter geometry and the cutout; this still requires final image and mesh review.
-The narrow-shore solution must not be enabled by default on the strength of a
-monotonicity test alone.
+The former 0.002-world-km bank strip was replaced by banks with variable widths.
+`tools/build_verona_river_corridor.py` intersects each station's miter-normal rays
+with the 98 protected nonbridge atlas parcels in `corridor-space.json`, expanded
+by 0.015 world km. Both sides are independent. Widths can only shrink during a
+conservative smoothing pass (gradient at most 0.65); their cap is 0.40 world km and
+the current minimum radius is 0.1555635. Water retains its 0.075-world-km half-width.
+These widths are a bounded design choice constrained by measured space.
 
-This scope also excludes the rest of the world's rivers and the transition from
-quarter-tile geometry into the farther colour-only river rendering. It must not be
-reported as a general hydrology fix. Endpoint continuity, actual bank closure,
-cache boundaries, bridge clearance and adjacent prop grounding all need evidence.
+A float profile texture stores water height and both bank radii at all stations.
+Fifteen straight runs map a nearest point to the dense profile. Between water and
+the outer bank, a smooth cubic blend joins the water level to the actual GPU terrain
+height. Heights are only lowered. Beyond the measured radius the ground is unchanged.
+The finite reach uses endpoint planes; its endpoint water levels match the old river.
 
-## Coherent next implementation
+The shore mesh is a 0.025-world-km regular grid aligned with the quarter terrain
+(20,126 cells, four triangles from each cell's centre). Its centre fan exactly
+represents either original quarter-tile diagonal. The shared `vr_corrected_height`
+helper evaluates those same three fan vertices and interpolates their plane, so
+bank props and vegetation roots follow the uploaded surface rather than a smooth
+formula that differs between mesh vertices. Old terrain samples come from the
+actual GPU corner texture. The CPU camera applies the same fan interpolation over
+its existing bilinear terrain approximation; the audit supplies independently
+sampled GPU triangle heights instead.
 
-Condition the whole local valley corridor around a connected, downstream profile,
-with sloped or deliberately terraced shores. Keep the existing river's geographic
-centreline, but derive water, banks and nearby ground from one shared surface.
-Before choosing corridor width, measure the affected city parcels rather than
-moving landmarks to make space.
+The terrain cutout uses a binary texture of the exact uploaded grid cells. The
+outer row has unmodified heights, so interpolation joins the old surface along
+whole grid edges. This avoids clipping a lowered triangle halfway across its
+analytic-radius boundary. Protected atlas cells and their shared edges remain
+uncut. Water uses its original ribbon geometry; the bank fragment excludes the
+water strip. Numerical contact and boundary error still require measured evidence.
 
-Dependencies that must be updated and checked together:
+The replacement colour uses the same sRGB-to-linear palette conversion as the
+existing terrain. Sloped banks have earth near the water and meadow farther up.
+Geometry-derived slope shading preserves the low-poly relief. Water remains level
+across the channel. The existing pilot gravel material is applied to the replacement bank surface.
 
-- `verona_bank.gd` / `verona_bank_props.gdshader`: stones, grass and reeds currently
-  follow the old terrain. Their dry-margin checks must use the corrected shore.
-- `verona_vegetation.gd` / `verona_vegetation.gdshader`: existing placement texture
-  root heights must agree with any corrected bank surface.
-- `verona_bridges.gd` and bridge shaders: preserve or deliberately rebuild all deck,
-  stair and bank landing joins against the corrected terrain; verify arch clearance.
-- Terrain cache, visible terrain, camera height sampling and any affected building
-  terraces must agree. A fragment cutout alone cannot provide this shared surface.
+## Reproduction
 
-Acceptance requires GPU geometry checks plus actual near and city-view screenshots,
-including pan, zoom and fallback. A smooth profile with floating props, exposed
-holes or excessive retaining cliffs is a failed result.
+```sh
+python3 tools/build_verona_river_profile.py docs/handover/verona-river/baseline-ordered-profile.json
+python3 tools/tests/audit_verona_corridor_space.py
+python3 tools/build_verona_river_corridor.py
+python3 tools/tests/check_verona_corridor_clearance.py
+python3 tools/tests/check_verona_river_profile.py
+Godot --path app --script res://scripts/debug/verona_river_check.gd
+```
+
+Missing or malformed profile data leaves the original terrain active. Shader
+parameters are bound once per material, with activation and current GPU cache
+updated per view. Out-of-cache terrain lookups are rejected rather than clamped.
+
+## Acceptance and limits
+
+Require independent water triangle checks, protected-parcel footprint clearance,
+actual bank contact errors, bridge pier support and bank landing continuity, and
+near/city screenshots. A smooth river with floating plants or unsupported bridge
+piers is not accepted. The 0.25-km terrain mode is the current extent; other rivers
+and the farther colour-only map representation are not a global hydrology repair.

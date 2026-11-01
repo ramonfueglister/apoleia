@@ -7,6 +7,7 @@ render_mode blend_disabled, unshaded;
 
 #include "res://shaders/tile_terrain.gdshaderinc"
 #include "res://shaders/tile_props.gdshaderinc"
+#include "res://shaders/verona_river.gdshaderinc"
 
 uniform ivec2 prop_origin;
 uniform int prop_n = 96;
@@ -24,5 +25,17 @@ void fragment() {
 	COLOR = vec4(0.0, 0.0, 0.0, -1.0);
 	if (local.x < prop_n && local.y < prop_n && slot < slots) {
 		COLOR = tt_prop_place(prop_origin + local, slot, slots, house);
+		// One authoritative root height for both native and legacy vegetation.
+		if (!house && COLOR.w >= 0.0 && verona_river_active) {
+			vec2 p = world_min + (vec2(prop_origin + local) + COLOR.xy) * tile_km;
+			if (vr_inside(p)) {
+				// Quarter-parcel coordinates near Verona have a float32 ULP of 1/512.
+				// Store that exact binary position before sampling height: the RGBAH
+				// placement texture must not move a root after its height was computed.
+				COLOR.xy = round(COLOR.xy * 512.0) / 512.0;
+				p = world_min + (vec2(prop_origin + local) + COLOR.xy) * tile_km;
+			}
+			COLOR.z = vr_corrected_height(p, COLOR.z * level_h) / level_h;
+		}
 	}
 }

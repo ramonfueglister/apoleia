@@ -1,6 +1,6 @@
 # Verona – erster Uferabschnitt
 
-Status: Uferdetails lokal validiert; Flusshöhen offen (Nutzerbefund vom 01.11.2026); [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
+Status: Uferdetails lokal validiert; die anschliessende [Flusskorrektur](VERONA_RIVER.md) verbindet sie mit dem korrigierten Ufer; [Prüfbericht und Spielaufnahmen](../handover/verona-bank/validation.md). Der Pilot setzt die angenommene [Uferstudie](../handover/verona-bank/riverbank-concept.png) an einem kurzen Abschnitt südwestlich der Nordbrücke um. Die Strassen- und Platzstudien gehören noch nicht zu dieser Umsetzung.
 
 ## Beobachtete Grundlage
 
@@ -23,3 +23,10 @@ Die lokale Kiesfarbe wird ausschliesslich im bestehenden Flussband-Zweig des Ter
 Die Höhen werden pro Meshpunkt aus der aktuellen GPU-Eckentextur und derselben Geländediagonale wie beim Boden berechnet. Das ist eine vertikale Anpassung an den vorhandenen Untergrund; die Flusssteine bekommen keine separate ebene Basis. Die Normalen berücksichtigen diese Anpassung. Alle Achsen der Ausgangsmodelle verwenden den gemeinsamen Metermassstab.
 
 Detailstufen wechseln bei 1.5 und 4 km Sichtbreite. Über 7.5 km, ausserhalb des Pilotbereichs, bei fehlenden Modellen oder unvollständiger Geländeabdeckung ist die Ergänzung deaktiviert. Es wird nichts aus dem ursprünglichen Gelände entfernt. Es gibt keine periodischen GPU-Auslesevorgänge für diese statischen Uferdetails.
+
+## Anschluss an die Flusskorrektur
+
+Seit der Korridorkorrektur verwenden die Modelle im betroffenen Bereich die gemeinsame
+Dreiecksfläche aus `verona_river.gdshaderinc`. Die ursprüngliche GPU-Eckentextur bleibt
+die unveränderte Ausgangsfläche. Die Kiesfarbe wird auf dem neuen Ufer erneut angewandt.
+Der unabhängige Kontakt- und Wasseranschlussnachweis steht im [Fluss-Prüfbericht](../handover/verona-river/validation.md).

@@ -71,6 +71,7 @@ func river_edge_at(point: Vector2) -> float:
 func shader_height_at(point: Vector2) -> float:
 	# Direct algebra from the prop shader, compared to independent barycentric
 	# ground_at above; texture bindings are checked separately against renderer.
+	# River fan geometry is independently checked in verona_corridor_check.gd.
 	var g: Vector2=(point-terrain.world_min)/.25
 	var tile:=Vector2i(g.floor());var uv:=g-Vector2(tile)
 	var c:=corners.get_pixelv(tile-corner_origin)
@@ -79,7 +80,10 @@ func shader_height_at(point: Vector2) -> float:
 		level=c.r+(c.g-c.r)*uv.x+(c.b-c.g)*uv.y if uv.x>=uv.y else c.r+(c.a-c.r)*uv.y+(c.b-c.a)*uv.x
 	else:
 		level=c.r+(c.g-c.r)*uv.x+(c.a-c.r)*uv.y if uv.x+uv.y<=1 else c.b+(c.a-c.b)*(1-uv.x)+(c.g-c.b)*(1-uv.y)
-	return level*terrain.level_h
+	var height:float=level*terrain.level_h
+	if terrain._river!=null and terrain._river.enabled:
+		return terrain._river.corrected_height_with_sampler(point,height,Callable(self,"ground_at"))
+	return height
 
 func audit(label: String) -> Dictionary:
 	var bank=terrain._bank
@@ -129,6 +133,8 @@ func audit(label: String) -> Dictionary:
 					var dry:=river_edge_at(xz);min_dry=minf(min_dry,dry)
 					check(dry>=.0025,label+": mesh enters existing river water")
 					var ground:=ground_at(xz);var sh:=shader_height_at(xz)
+					if terrain._river!=null and terrain._river.enabled:
+						ground=terrain._river.corrected_height_with_sampler(xz,ground,Callable(self,"ground_at"))
 					max_ground_error=maxf(max_ground_error,absf(ground-sh))
 					check(absf(ground-sh)<.000001,label+": prop terrain drape differs from actual ground triangles")
 					if v.y<.00001:

@@ -619,9 +619,9 @@ func _build_nodes() -> void:
 	_bank = VeronaBank.new()
 	add_child(_bank)
 	_bank.setup(self)
-	# Experimental channel: never replace the accepted scene until the valley
-	# corridor and bridge/bank integration pass visual acceptance.
-	if OS.get_cmdline_user_args().has("--verona-river-prototype"):
+	# The audited Verona channel is the normal near view; retain an explicit
+	# diagnostic baseline for reproducible comparisons.
+	if not OS.get_cmdline_user_args().has("--legacy-verona-river"):
 		_river=VeronaRiver.new()
 		add_child(_river)
 		_river.setup(self)
@@ -1547,6 +1547,11 @@ func water_at(p: Vector2) -> int:
 
 ## Smooth display height of the ground (world y) at p, for the camera focus.
 func ground_y(p: Vector2) -> float:
+	var height := uncorrected_ground_y(p)
+	return _river.corrected_height(p, height) if _river != null else height
+
+## Camera approximation before the local channel correction; never a GPU-contact oracle.
+func uncorrected_ground_y(p: Vector2) -> float:
 	if water_at(p) == 1: return 0.0
 	if _level_images.has(level):
 		# baked corner levels, bilinear between the four corners around p
@@ -1560,8 +1565,10 @@ func ground_y(p: Vector2) -> float:
 		var b := image.get_pixel(i + 1, j).r
 		var c := image.get_pixel(i, j + 1).r
 		var d := image.get_pixel(i + 1, j + 1).r
-		return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y) * 255.0 * level_h
-	return maxf(1.0, maxf(relief_m(p), 0.0) / m_per_level) * level_h
+		var height := lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y) * 255.0 * level_h
+		return height
+	var height := maxf(1.0, maxf(relief_m(p), 0.0) / m_per_level) * level_h
+	return height
 
 ## Highest display height in a rectangle (coarse sampling), for the weather.
 func max_y(rect: Rect2) -> float:

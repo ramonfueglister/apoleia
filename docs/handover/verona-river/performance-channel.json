@@ -1,0 +1,19 @@
+{
+	"failures": [],
+	"mode": "channel",
+	"test": "verona_river_perf",
+	"views": [
+		{
+			"median_ms": 36.671,
+			"p95_ms": 48.477,
+			"samples": 120,
+			"width": 5.0
+		},
+		{
+			"median_ms": 33.061,
+			"p95_ms": 44.427,
+			"samples": 120,
+			"width": 12.0
+		}
+	]
+}

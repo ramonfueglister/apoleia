@@ -1,6 +1,7 @@
 // Original metre meshes conform vertically to the same terrain triangles.
 shader_type spatial;
 render_mode cull_disabled, diffuse_lambert, specular_disabled;
+#include "res://shaders/verona_river.gdshaderinc"
 uniform sampler2D corner_tex : filter_nearest, repeat_disable;
 uniform ivec2 corner_origin;
 uniform ivec2 corner_size;
@@ -19,7 +20,7 @@ float vb_height(vec2 p) {
 	} else {
 		h=uv.x+uv.y<=1.0 ? c.x+(c.y-c.x)*uv.x+(c.w-c.x)*uv.y : c.z+(c.w-c.z)*(1.0-uv.x)+(c.y-c.z)*(1.0-uv.y);
 	}
-	return h*level_h;
+	return vr_corrected_height(p,h*level_h);
 }
 void vertex() {
 	vec3 p=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
