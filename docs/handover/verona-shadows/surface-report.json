@@ -1,0 +1,1584 @@
+{
+	"atlas_after": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"atlas_before": "fc17bb03b95d3418227ed77d4d5844e444b1a62758fd08768bd2f30ffc8d8748",
+	"clock_paused": true,
+	"failures": [],
+	"loader_failures": [],
+	"phase": "surface",
+	"renderer": "Apple M3 Pro (Apple9)",
+	"test": "verona_shadows_check",
+	"views": [
+		{
+			"blur": 1.5,
+			"camera_transform": "[X: (0.707107, 0.0, 0.707107), Y: (0.40558, 0.819152, -0.40558), Z: (-0.579228, 0.573576, 0.579228), O: (-675.8333, 4.275339, -490.1668)]",
+			"depth_bias": 0.100000001490116,
+			"draws": {
+				"median": 1420.0,
+				"p95": 1420.0
+			},
+			"frame_ms": {
+				"median": 10.178,
+				"p95": 13.166
+			},
+			"name": "plain-light",
+			"normal_bias": 28.0,
+			"primitives": {
+				"median": 2351973.0,
+				"p95": 2351973.0
+			},
+			"process_ms": {
+				"median": 66.445,
+				"p95": 128.277
+			},
+			"samples": [
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.02,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.799,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.784,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.01,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.256,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.08,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.239,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.862,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.066,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.936,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.554,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 13.288,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.93,
+					"primitives": 2351973.0,
+					"process_ms": 128.277
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.692,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.129,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.239,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.178,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 13.166,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.471,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.83,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.707,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.091,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.272,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 13.721,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.019,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.902,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.37,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.573,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.632,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.998,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.726,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 8.949,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.406,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.963,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.098,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.473,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.178,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.381,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.186,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.376,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.807,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.712,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.932,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.262,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.705,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.41,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.009,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.462,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.701,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.905,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.22,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.908,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.16,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.739,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.355,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.087,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.942,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.277,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.931,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.102,
+					"primitives": 2351973.0,
+					"process_ms": 66.445
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-shadows/surface/plain-light-1.5.png",
+			"shadows": false,
+			"ssao": false,
+			"sun_shadows_enabled": false,
+			"terrain_level": 0,
+			"width_km": 1.5
+		},
+		{
+			"blur": 1.5,
+			"camera_transform": "[X: (0.707107, 0.0, 0.707107), Y: (0.40558, 0.819152, -0.40558), Z: (-0.579228, 0.573576, 0.579228), O: (-675.8333, 4.275339, -490.1668)]",
+			"depth_16": false,
+			"depth_bias": 0.100000001490116,
+			"draws": {
+				"median": 2542.0,
+				"p95": 2542.0
+			},
+			"frame_ms": {
+				"median": 12.579,
+				"p95": 13.67
+			},
+			"name": "depth-32",
+			"normal_bias": 28.0,
+			"primitives": {
+				"median": 4669742.0,
+				"p95": 4669742.0
+			},
+			"process_ms": {
+				"median": 243.708,
+				"p95": 243.708
+			},
+			"samples": [
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.298,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.84,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.899,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.412,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.855,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.448,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.253,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.237,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.151,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.28,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.832,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.079,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.817,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.482,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.704,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.261,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.039,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.455,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.083,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.696,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.631,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.671,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.67,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.81,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.569,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.774,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.409,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.846,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 16.507,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.86,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.446,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.579,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.257,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.334,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.49,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.035,
+					"primitives": 4669742.0,
+					"process_ms": 243.708
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.904,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.487,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.812,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.029,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.944,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.32,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.904,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.363,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.025,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.424,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.276,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.21,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.539,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.265,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.982,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.409,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.043,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.891,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 16.488,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.537,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.098,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 13.318,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 11.934,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				},
+				{
+					"draws": 2542.0,
+					"frame_ms": 12.473,
+					"primitives": 4669742.0,
+					"process_ms": 17.459
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-shadows/surface/depth-32-1.5.png",
+			"shadows": true,
+			"ssao": true,
+			"sun_shadows_enabled": true,
+			"terrain_level": 0,
+			"width_km": 1.5
+		},
+		{
+			"blur": 1.5,
+			"camera_transform": "[X: (0.707107, 0.0, 0.707107), Y: (0.40558, 0.819152, -0.40558), Z: (-0.579228, 0.573576, 0.579228), O: (-675.8333, 4.275339, -490.1668)]",
+			"depth_bias": 0.100000001490116,
+			"draws": {
+				"median": 1420.0,
+				"p95": 1420.0
+			},
+			"frame_ms": {
+				"median": 9.994,
+				"p95": 12.12
+			},
+			"name": "unshaded",
+			"normal_bias": 28.0,
+			"primitives": {
+				"median": 2351973.0,
+				"p95": 2351973.0
+			},
+			"process_ms": {
+				"median": 16.154,
+				"p95": 16.154
+			},
+			"samples": [
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.614,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.576,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.409,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.323,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.236,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.313,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.715,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.843,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 8.926,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.868,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.082,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.19,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.991,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.339,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 8.966,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.02,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.287,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.619,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.154,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.773,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.046,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.037,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.963,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.556,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.186,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.017,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.24,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.201,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.699,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.49,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.165,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.673,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.932,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.22,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.762,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.519,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.527,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.663,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.497,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.822,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.952,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.727,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.157,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.736,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.174,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.931,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.95,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.953,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.12,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.06,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 12.984,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.896,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.958,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.223,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.994,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.841,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.11,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.266,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.827,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.124,
+					"primitives": 2351973.0,
+					"process_ms": 16.154
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-shadows/surface/unshaded-1.5.png",
+			"shadows": false,
+			"ssao": false,
+			"sun_shadows_enabled": false,
+			"terrain_level": 0,
+			"unshaded": true,
+			"width_km": 1.5
+		},
+		{
+			"blur": 1.5,
+			"camera_transform": "[X: (0.707107, 0.0, 0.707107), Y: (0.40558, 0.819152, -0.40558), Z: (-0.579228, 0.573576, 0.579228), O: (-675.8333, 4.275339, -490.1668)]",
+			"depth_bias": 0.100000001490116,
+			"draws": {
+				"median": 1420.0,
+				"p95": 1420.0
+			},
+			"frame_ms": {
+				"median": 10.154,
+				"p95": 10.779
+			},
+			"name": "flat-albedo",
+			"normal_bias": 28.0,
+			"primitives": {
+				"median": 2351973.0,
+				"p95": 2351973.0
+			},
+			"process_ms": {
+				"median": 10.447,
+				"p95": 13.037
+			},
+			"samples": [
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.709,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.511,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 8.862,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.068,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.833,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.383,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.003,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.283,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.281,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.849,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.627,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.546,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.002,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.266,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.412,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.154,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.019,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.631,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.09,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.14,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.637,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.352,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.112,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.495,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.516,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.63,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.959,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.638,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.898,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.412,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.101,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.574,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.359,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.621,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.677,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.26,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.999,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.094,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.282,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.234,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.648,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.215,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.539,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.3,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.032,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.779,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.71,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.442,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.347,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.81,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 11.083,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.603,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.146,
+					"primitives": 2351973.0,
+					"process_ms": 10.447
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.871,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.52,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.8,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.651,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.903,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 10.738,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				},
+				{
+					"draws": 1420.0,
+					"frame_ms": 9.696,
+					"primitives": 2351973.0,
+					"process_ms": 13.037
+				}
+			],
+			"screenshot": "/Users/ramonfuglister/Coding/apoleia-codex-perf/app/../build/verona-shadows/surface/flat-albedo-1.5.png",
+			"shadows": false,
+			"ssao": false,
+			"sun_shadows_enabled": false,
+			"terrain_level": 0,
+			"textures": false,
+			"unshaded": true,
+			"width_km": 1.5
+		}
+	],
+	"window": [
+		1440,
+		1000
+	]
+}
