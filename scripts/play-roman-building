@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start the actual game at any of the nineteen integrated Roman buildings."""
+"""Start the actual game at an integrated Roman building."""
 import argparse
 import json
 import math
@@ -10,6 +10,7 @@ import subprocess
 
 root = Path(__file__).resolve().parents[1]
 entries = json.loads((root / 'app/assets/buildings/roman_series_placements.json').read_text())['entries']
+entries += json.loads((root / 'app/assets/buildings/verona_residences.json').read_text())['entries']
 by_id = {e['id']: e for e in entries}
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('building', nargs='?', default='amphitheater', choices=sorted(by_id))

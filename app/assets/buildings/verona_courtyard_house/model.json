@@ -1,0 +1,63 @@
+{
+  "slug": "verona_courtyard_house",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      6.40000057220459
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "lods": {
+    "detail": {
+      "triangles": 57290,
+      "material_batches": 29
+    },
+    "medium": {
+      "triangles": 16456,
+      "material_batches": 27,
+      "primitive_actions": {
+        "closed_box": 987,
+        "paving_top": 324,
+        "structural_mesh": 57,
+        "detail_removed": 3,
+        "lathe": 9,
+        "roof_tile_plane": 931,
+        "tube": 99,
+        "beam": 18
+      }
+    },
+    "far": {
+      "triangles": 4640,
+      "material_batches": 14,
+      "primitive_actions": {
+        "closed_box": 276,
+        "detail_removed": 1041,
+        "fine_trim_removed": 15,
+        "structural_mesh": 45,
+        "lathe": 5,
+        "roof_tile_removed": 931,
+        "tube": 97,
+        "beam": 18
+      }
+    }
+  },
+  "design": {
+    "status": "implementiert",
+    "front": "south",
+    "height_cap_m": 6.5,
+    "footprint_cap_m": [
+      9.2,
+      9.2
+    ],
+    "placement": "existing residential or decorative street slot; no nonuniform scaling",
+    "description": "L-shaped courtyard house with low shop wing and rear loft",
+    "provenance": "Original procedural geometry; typological artistic infill, not a historical reconstruction"
+  }
+}

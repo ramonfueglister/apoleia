@@ -48,7 +48,9 @@ Die vorhandene Terrain-Terrasse bleibt für Wahrzeichen erhalten. Andere Modelle
 
 ## Detailstufen
 
-Jedes GLB enthält Detail-, Mittel- und Ferngeometrie. Die aggressive automatische Fernreduktion öffnete bei der Bildprüfung kleine architektonische Körper. Deshalb zeichnet die Laufzeit in der Fernstufe bewusst die geprüfte Mittelgeometrie weiter, ohne Schatten. Es ist stets genau eine Geometriestufe sichtbar. Amphitheater, Theater und Thermen behalten auch die Detailgeometrie in der Mittel-/Fernstufe, da deren automatische Reduktion Bögen und Gewölbe beschädigt. Die höhere Dreiecksanzahl in dieser Entfernung ist die derzeitige Qualitäts-/Leistungsabwägung; die defekte Ferngeometrie wird nicht angezeigt. Bei Übergang auf gröbere Landschaftsstufen übernimmt der bestehende Stadt-Renderer.
+Die 19 Serienmodelle verwenden seit der Verona-Weiterentwicklung drei formbewahrend erzeugte Geometriestufen (`shape_preserving_v1`). Die bisher nötigen Detail-/Medium-Ersatzstufen entfallen. Mauern, Dachflächen und Bögen bleiben erhalten; kleine Verzierungen und Dachziegel werden gezielt reduziert. Die automatische zusätzliche Godot-LOD-Generierung ist für diese GLBs deaktiviert. Es ist stets genau eine Stufe sichtbar; die Fernstufe verzichtet auf Schatten. Bei gröberen Landschaftsstufen übernimmt der bestehende Stadt-Renderer.
+
+Verona enthält zusätzlich drei Wohnhausvarianten und zwei wiederverwendbare Strassenmodelle. [Standorte, Regeln und Prüfungen](VERONA_CITY.md).
 
 ## Reproduzieren
 

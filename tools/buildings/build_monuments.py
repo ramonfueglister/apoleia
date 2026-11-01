@@ -29,6 +29,7 @@ def prism(poly,depth,mat,p=(0,0,0),u=(1,0,0),n=(0,-1,0)):
     k.mesh(v,faces,mat)
 
 def ring(rx,ry,z,h,width,mat,start=0,end=TAU,segments=96):
+    segments=k.lod_count(segments,max(12,segments//2),max(8,segments//3))
     count=max(1,round(segments*(end-start)/TAU))
     for i in range(count):
         a=start+(end-start)*i/count;b=start+(end-start)*(i+1)/count
@@ -39,9 +40,9 @@ def disk(rx,ry,z,mat,n=96,start=0,end=TAU):
     v=[(0,0,z)]+[(rx*math.cos(start+(end-start)*i/n),ry*math.sin(start+(end-start)*i/n),z) for i in range(n+1)]
     k.mesh(v,[(0,i+1,i+2) for i in range(n)],mat)
 
-def lathe(p,profile,mat,n=16):
+def lathe(p,profile,mat,n=16,preserve_profile=False):
     """Closed architectural turning: steps and cornices require horizontal tops."""
-    k.lathe(p,profile,mat,n)
+    k.lathe(p,profile,mat,n,preserve_profile=preserve_profile)
     for index in [0,-1]:
         radius,z=profile[index]
         if radius<=1e-6:continue
@@ -71,14 +72,16 @@ def arch(p,u,n,width,height,depth=.6,mat=S,trim=L,closed=False,top=None):
     r=width/2; spring=height-r;thick=.22;f=frame(p,u,n)
     for side in [-1,1]:
         a=math.atan2(u[1],u[0]);ob(f(side*(r+thick/2),0,spring/2),(thick,depth,spring),mat,a)
-    for i in range(12):
-        a=i*math.pi/12+.004;b=(i+1)*math.pi/12-.004
+    arch_segments=k.lod_count(12,8,6)
+    for i in range(arch_segments):
+        a=i*math.pi/arch_segments+.004;b=(i+1)*math.pi/arch_segments-.004
         poly=[(r*math.cos(a),spring+r*math.sin(a)),(r*math.cos(b),spring+r*math.sin(b)),((r+thick)*math.cos(b),spring+(r+thick)*math.sin(b)),((r+thick)*math.cos(a),spring+(r+thick)*math.sin(a))]
         prism(poly,depth,trim,p,u,n)
     if top:
         # Spandrels fill the square head without filling the curved opening.
-        for i in range(16):
-            a=-r-thick+(width+2*thick)*i/16;b=-r-thick+(width+2*thick)*(i+1)/16
+        spandrel_segments=k.lod_count(16,8,6)
+        for i in range(spandrel_segments):
+            a=-r-thick+(width+2*thick)*i/spandrel_segments;b=-r-thick+(width+2*thick)*(i+1)/spandrel_segments
             za=spring+math.sqrt(max(0,(r+thick)**2-a*a));zb=spring+math.sqrt(max(0,(r+thick)**2-b*b))
             if max(za,zb)<top:prism([(a,za),(b,zb),(b,top),(a,top)],depth,mat,p,u,n)
     if closed:
@@ -168,19 +171,23 @@ def amphitheater():
     ring(rx+.10,ry+.10,17.95,.85,.70,P)
     ring(rx+.30,ry+.30,18.80,.20,1.0,L)
     # Seating bowl. Aisles remain empty radial wedges, with smaller stairs fitted between.
-    rows=24;segments=96
+    rows=k.lod_count(24,12,6);segments=k.lod_count(96,48,32)
+    aisle_every=segments//8;rise=14.64/rows
     for row in range(rows):
-        t=row/rows;outx=7.05+5.15*(row+1)/rows;outy=4.85+4.75*(row+1)/rows;z=1.55+row*.61
+        t=row/rows;outx=7.05+5.15*(row+1)/rows;outy=4.85+4.75*(row+1)/rows;z=1.55+row*rise
         for j in range(segments):
-            if j%12==0:continue
+            if j%aisle_every==0 and k.LOD=='detail':continue
             a=j*TAU/segments;b=(j+1)*TAU/segments
-            v=[(xx*math.cos(a1),yy*math.sin(a1),zz) for zz in [z,z+.59] for xx,yy,a1 in [(outx,outy,a),(outx,outy,b),(outx-.24,outy-.22,b),(outx-.24,outy-.22,a)]]
+            if j%aisle_every==0:a+=TAU/96
+            dx=k.lod_count(.24,5.15/rows+.025,5.15/rows+.025);dy=k.lod_count(.22,4.75/rows+.025,4.75/rows+.025)
+            v=[(xx*math.cos(a1),yy*math.sin(a1),zz) for zz in [z,z+rise-.02] for xx,yy,a1 in [(outx,outy,a),(outx,outy,b),(outx-dx,outy-dy,b),(outx-dx,outy-dy,a)]]
             k.mesh(v,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)],L if row%6 else S)
     for sector in range(8):
         a=(sector*12+.5)*TAU/96
-        for step in range(48):
-            t=step/48;r1=7.05+5.15*t;r2=4.85+4.75*t
-            ob((r1*math.cos(a),r2*math.sin(a),1.55+step*.305),(.36,.31,.23),S,math.atan2(ry*math.cos(a),-rx*math.sin(a)))
+        steps=k.lod_count(48,24,12)
+        for step in range(steps):
+            t=step/steps;r1=7.05+5.15*t;r2=4.85+4.75*t
+            ob((r1*math.cos(a),r2*math.sin(a),1.55+step*14.64/steps),(.36,.31*k.lod_count(1,2,4),.23*k.lod_count(1,2,4)),S,math.atan2(ry*math.cos(a),-rx*math.sin(a)))
     ring(7.05,4.85,.35,1.25,.20,R)
     ring(7.15,4.95,1.60,.16,.30,L)
     for a in [0,math.pi]:
@@ -210,16 +217,19 @@ def theater():
             a=math.pi+i*math.pi/18;column(rx*math.cos(a)*1.012,ry*math.sin(a)*1.012,z,4.4,.19)
         ring(rx+.18,ry+.18,z+4.40,.22,.60,L,math.pi,TAU)
     ring(rx+.1,ry+.1,9.9,.65,.65,P,math.pi,TAU)
-    for row in range(19):
-        r=5.0+(row+1)*.34;zz=.80+row*.46
-        for i in range(72):
-            if i%12==0:continue
-            a=math.pi+i*math.pi/72;b=math.pi+(i+1)*math.pi/72
-            ring(r,r*.968,zz,.43,.38,L,a,b,144)
+    rows=k.lod_count(19,10,6);segments=k.lod_count(72,36,24)
+    for row in range(rows):
+        r=5.0+(row+1)*6.46/rows;zz=.80+row*8.74/rows
+        for i in range(segments):
+            if i%(segments//6)==0 and k.LOD=='detail':continue
+            a=math.pi+i*math.pi/segments;b=math.pi+(i+1)*math.pi/segments
+            if i%(segments//6)==0:a+=math.pi/72
+            ring(r,r*.968,zz,8.74/rows-.03,k.lod_count(.38,6.46/rows+.04,6.46/rows+.04),L,a,b,segments*2)
     for sector in range(7):
         a=math.pi+sector*math.pi/6
-        for i in range(38):
-            r=5+i*.17;ob((r*math.cos(a),r*.968*math.sin(a),.8+i*.23),(.36,.24,.21),S,a+math.pi/2)
+        steps=k.lod_count(38,20,12)
+        for i in range(steps):
+            r=5+i*6.46/steps;ob((r*math.cos(a),r*.968*math.sin(a),.8+i*8.74/steps),(.36,.24*38/steps,.21*38/steps),S,a+math.pi/2)
     # Timber stage platform and three-door scaenae frons with two column orders.
     k.box((0,1.02,1.25),(23.6,3.9,1.7),S)
     for i in range(46):k.box((-11.5+i*.5,1.05,2.13),(.48,3.85,.10),W,.01)
@@ -281,6 +291,8 @@ def capitolium():
 
 def dome(cx,cy,z,r,h,mat='Tile_0',rings=14,n=64):
     # Stepped faceted courses, with radial ribs giving an architectural dome.
+    rings=k.lod_count(rings,max(4,round(rings*.7)),max(3,round(rings*.43)))
+    n=k.lod_count(n,max(16,n//2),max(12,n//3))
     for row in range(rings):
         a=row*math.pi/2/rings;b=(row+1)*math.pi/2/rings
         r0=r*math.cos(a);r1=r*math.cos(b);z0=z+h*math.sin(a);z1=z+h*math.sin(b)
@@ -438,4 +450,4 @@ BUILDERS={'amphitheater':amphitheater,'theater':theater,'capitolium':capitolium,
 args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
 chosen=list(BUILDERS) if '--all' in args else [next((a.split('=',1)[1] for a in args if a.startswith('--model=')),'capitolium')]
 for slug in chosen:
-    k.configure(slug);BUILDERS[slug]();k.finish(slug)
+    k.configure(slug);BUILDERS[slug]();k.finish(slug,rebuilder=BUILDERS[slug])

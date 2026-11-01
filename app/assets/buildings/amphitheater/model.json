@@ -13,18 +13,38 @@
     ]
   ],
   "metres": true,
+  "lod_method": "shape_preserving_v1",
   "lods": {
     "detail": {
       "triangles": 184188,
       "material_batches": 13
     },
     "medium": {
-      "triangles": 34317,
-      "material_batches": 13
+      "triangles": 58220,
+      "material_batches": 13,
+      "primitive_actions": {
+        "closed_box": 701,
+        "paving_top": 136,
+        "structural_mesh": 3361,
+        "lathe": 324,
+        "circular_cap": 576,
+        "custom_shaft": 144,
+        "beam": 52
+      }
     },
     "far": {
-      "triangles": 7817,
-      "material_batches": 13
+      "triangles": 39236,
+      "material_batches": 12,
+      "primitive_actions": {
+        "closed_box": 605,
+        "paving_top": 136,
+        "structural_mesh": 2029,
+        "lathe": 324,
+        "circular_cap": 576,
+        "custom_shaft": 144,
+        "relief_removed": 288,
+        "fine_beam_removed": 52
+      }
     }
   }
 }

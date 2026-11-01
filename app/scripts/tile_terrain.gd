@@ -1148,6 +1148,8 @@ func _plan_lots_of(i: int, j: int, v: int) -> Array:
 				_plan_lots[key] = []
 			_:
 				_plan_lots[key] = [_plan_lot(key, v)]
+	if (v & 255) == 7 and _series != null:
+		return _series.filter_street_lots(key, _plan_lots[key])
 	return _plan_lots[key]
 
 func _plan_lot(key: Vector2i, v: int) -> Vector2i:

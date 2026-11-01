@@ -1,0 +1,63 @@
+{
+  "slug": "verona_townhouse",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      8.710000038146973
+    ]
+  ],
+  "metres": true,
+  "lod_method": "shape_preserving_v1",
+  "lods": {
+    "detail": {
+      "triangles": 65414,
+      "material_batches": 28
+    },
+    "medium": {
+      "triangles": 16874,
+      "material_batches": 26,
+      "primitive_actions": {
+        "closed_box": 970,
+        "paving_top": 324,
+        "structural_mesh": 66,
+        "lathe": 8,
+        "beam": 23,
+        "tube": 73,
+        "detail_removed": 4,
+        "roof_tile_plane": 1228
+      }
+    },
+    "far": {
+      "triangles": 5320,
+      "material_batches": 12,
+      "primitive_actions": {
+        "closed_box": 330,
+        "detail_removed": 970,
+        "fine_trim_removed": 16,
+        "structural_mesh": 54,
+        "lathe": 4,
+        "beam": 23,
+        "roof_tile_removed": 1228,
+        "tube": 71
+      }
+    }
+  },
+  "design": {
+    "status": "implementiert",
+    "front": "south",
+    "height_cap_m": 9.0,
+    "footprint_cap_m": [
+      9.2,
+      9.2
+    ],
+    "placement": "existing residential or decorative street slot; no nonuniform scaling",
+    "description": "Two-storey townhouse with recessed upper loggia and broad hipped roof",
+    "provenance": "Original procedural geometry; typological artistic infill, not a historical reconstruction"
+  }
+}

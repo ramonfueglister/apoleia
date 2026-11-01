@@ -8,6 +8,7 @@ var materials: Array[ShaderMaterial] = []
 var lods: Array[Node3D] = []
 var active_lod := -1
 var rendered_lod := -1
+var native_lods := false
 var fit := 1.0
 var dimensions_m := Vector3.ZERO
 var source_landmark: MeshInstance3D
@@ -15,10 +16,13 @@ var _meshes: Array[MeshInstance3D] = []
 
 func setup(spec: Dictionary, packed: PackedScene, metadata: Dictionary, terrain) -> bool:
 	entry = spec
+	native_lods = metadata.get("lod_method", "") == "shape_preserving_v1"
 	name = "Roman_" + String(spec.id)
 	var r: Array = spec.rect
 	rect = Rect2(terrain.world_min + Vector2(r[0], r[1]) * terrain.plans.parcel_km, Vector2(r[2], r[3]) * terrain.plans.parcel_km)
 	centre = rect.get_center()
+	if spec.has("offset_m"):
+		centre += Vector2(spec.offset_m[0], spec.offset_m[1]) * terrain.DIORAMA_KM_PER_M
 	if spec.has("landmark"):
 		var index: int = terrain._landmark_names.find("kit:" + String(spec.landmark))
 		if index < 0:
@@ -63,7 +67,10 @@ func setup(spec: Dictionary, packed: PackedScene, metadata: Dictionary, terrain)
 				var material_key: String = source.resource_name if source.resource_name != "" else str(key)
 				if not cache.has(material_key):
 					var material := _surface(unit)
-					material.set_shader_parameter("base_colour", source.albedo_color)
+					var colour := source.albedo_color
+					if spec.has("facade_tint") and material_key.contains("Limewash"):
+						colour *= Color(spec.facade_tint)
+					material.set_shader_parameter("base_colour", colour)
 					material.set_shader_parameter("base_texture", source.albedo_texture)
 					material.set_shader_parameter("has_texture", source.albedo_texture != null)
 					material.set_shader_parameter("material_roughness", source.roughness)
@@ -114,10 +121,10 @@ func set_view(width: float, ground: float) -> void:
 	var multiplier := maxf(1, maxf(dimensions_m.x, dimensions_m.z) * fit / 10.0)
 	var wanted := 0 if width <= 2.5 * multiplier else 1 if width <= 7.5 * multiplier else 2
 	if wanted != active_lod:
-		# The aggressive far decimation opens small architectural volumes.
-		# Use the validated medium mesh at far range, without shadow passes.
+		# Regenerated assets use all three authored stages. Older exports
+		# retain their approved fallback until they are rebuilt.
 		active_lod = wanted
-		rendered_lod = 0 if entry.id in ["amphitheater", "theater", "thermen"] else mini(wanted, 1)
+		rendered_lod = wanted if native_lods else (0 if entry.id in ["amphitheater", "theater", "thermen"] else mini(wanted, 1))
 		for i in lods.size():
 			lods[i].visible = i == rendered_lod
 		for mesh in _meshes:
