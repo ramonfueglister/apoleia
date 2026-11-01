@@ -1,0 +1,13 @@
+#!/bin/sh
+# Start the actual game at the integrated Verona tavern.
+set -eu
+project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ -n "${GODOT_BIN:-}" ]; then
+    godot_bin=$GODOT_BIN
+elif command -v godot >/dev/null 2>&1; then
+    godot_bin=$(command -v godot)
+else
+    godot_bin=/Applications/Godot.app/Contents/MacOS/Godot
+fi
+"$godot_bin" --headless --path "$project_root/app" --editor --import
+exec "$godot_bin" --path "$project_root/app" res://landscape.tscn -- --view=10.9816,45.4445,1.2 "$@"

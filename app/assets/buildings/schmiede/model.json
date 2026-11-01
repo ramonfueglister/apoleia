@@ -1,0 +1,30 @@
+{
+  "slug": "schmiede",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      8.539999961853027
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 57705,
+      "material_batches": 27
+    },
+    "medium": {
+      "triangles": 11030,
+      "material_batches": 27
+    },
+    "far": {
+      "triangles": 2270,
+      "material_batches": 27
+    }
+  }
+}

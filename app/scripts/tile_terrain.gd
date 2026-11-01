@@ -18,6 +18,8 @@ const RomanBuildings = preload("res://scripts/voxel/roman_buildings.gd")
 const LANDMARK_SHADER = preload("res://shaders/tile_landmark.gdshader")
 const CityPlans = preload("res://scripts/city_plans.gd")
 const RomanCity = preload("res://scripts/voxel/roman_city.gd")
+const RomanSeries = preload("res://scripts/buildings/roman_series.gd")
+const CityTaverna = preload("res://scripts/buildings/city_taverna.gd")
 const WaterLines = preload("res://scripts/water_lines.gd")
 
 # Zoom levels by tile size. SimCity 2000 tiles at every zoom, up to the whole
@@ -287,6 +289,8 @@ var _landmarks: Array[MeshInstance3D] = []
 var _landmark_levels := PackedFloat32Array() # _place_landmarks
 var _landmark_names: Array[String] = [] # LANDMARKS mesh of each in _landmarks
 var plans: CityPlans # the city plans (docs/kit2/CITY_PLANS.md), null without them
+var _series: RomanSeries
+var _taverna: CityTaverna
 var _plan_lots := {} # parcel -> _plan_lots_of
 var _plan_house_lots := {} # metres -> house lots nearest that height (_lot_weights)
 ## What changed in this frame's update_view (level, props, tier, windows), for
@@ -469,11 +473,23 @@ func _lot_of(kind: int) -> int:
 func _all_materials() -> Array[ShaderMaterial]:
 	var list: Array[ShaderMaterial] = [_terrain_material, _corner_material, _place_material, _coast_material, _flags_material]
 	list.append_array(_prop_materials)
+	if _taverna != null:
+		list.append_array(_taverna.materials)
+	if _series != null:
+		list.append_array(_series.materials)
 	return list
+
+func _landmark_entries() -> Array:
+	var entries: Array = LANDMARKS.duplicate()
+	if plans != null:
+		for building: Dictionary in plans.info.cities.get("verona", {}).get("buildings", []):
+			if String(building.get("landmark", "")).begins_with("verona_"):
+				entries.append(["kit:" + building.landmark, Vector2.ZERO, Vector2i.ONE, 0.0])
+	return entries
 
 func _build_nodes() -> void:
 	# the Roman models baked at once (in parallel) instead of one by one below
-	RomanBuildings.prepare(LOT_KINDS, LANDMARKS.filter(func(e: Array) -> bool: return String(e[0]).begins_with("kit:")).map(func(e: Array) -> String: return String(e[0]).trim_prefix("kit:")))
+	RomanBuildings.prepare(LOT_KINDS, _landmark_entries().filter(func(e: Array) -> bool: return String(e[0]).begins_with("kit:")).map(func(e: Array) -> String: return String(e[0]).trim_prefix("kit:")))
 	# the quarter tiles' data (before the corner pass, which reads it)
 	_sub_view = _prep_view("TileQuarters", Vector2i(SUB_WINDOW, SUB_WINDOW), _sub_material)
 	_sub_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -578,6 +594,14 @@ func _build_nodes() -> void:
 		_prop_materials[kind].set_shader_parameter("prop_n", PROP_N)
 	_set_tree_table(_props_tier == 2)
 	_build_landmarks()
+	_taverna = CityTaverna.new()
+	add_child(_taverna)
+	if not _taverna.setup(plans, _terrain_material, DIORAMA_KM_PER_M):
+		_taverna.queue_free()
+		_taverna = null
+	_series = RomanSeries.new()
+	add_child(_series)
+	_series.setup(self)
 
 ## Same as landscape.gd lonlat_to_world.
 static func _lonlat_world(ll: Vector2) -> Vector2:
@@ -588,7 +612,7 @@ func _build_landmarks() -> void:
 	material.shader = LANDMARK_SHADER
 	var rects := PackedVector4Array()
 	var placed := _plan_landmarks()
-	for entry in LANDMARKS:
+	for entry in _landmark_entries():
 		var size := Vector2(entry[2])
 		var first := ((_lonlat_world(entry[1]) - world_min) / LANDMARK_TILE_KM - size * 0.5).round()
 		var lo := world_min + first * LANDMARK_TILE_KM
@@ -626,8 +650,6 @@ func _build_landmarks() -> void:
 		var b := centre + Vector2(reach.end.x, reach.end.z) * km_per_m
 		rects.append(Vector4(minf(lo.x, a.x - free), minf(lo.y, a.y - free), maxf(hi.x, b.x + free), maxf(hi.y, b.y + free)))
 	_landmark_rects = rects
-	for target in _all_materials() + [_sub_material]:
-		target.set_shader_parameter("landmark_rects", rects)
 
 ## Up close each landmark block is flat at the middle level of its corners
 ## (the shader levels the corners in its rectangle); beyond the near levels
@@ -635,6 +657,8 @@ func _build_landmarks() -> void:
 func _place_landmarks() -> void:
 	var near := level <= 1
 	var levels := PackedFloat32Array()
+	var active_rects := PackedVector4Array()
+	var patch := Rect2(world_min + Vector2(patch_origin) * tile_km, Vector2.ONE * PATCH_N * tile_km)
 	for k in _landmarks.size():
 		var node := _landmarks[k]
 		var r := _landmark_rects[k]
@@ -650,12 +674,19 @@ func _place_landmarks() -> void:
 		found.sort()
 		var at := found[found.size() >> 1] if found.size() > 0 else \
 			maxf(1.0, round(ground_y(Vector2(node.position.x, node.position.z)) / level_h))
-		levels.append(at)
-		node.visible = near
+		node.visible = near and patch.intersects(Rect2(Vector2(r.x, r.y), Vector2(r.z - r.x, r.w - r.y)))
 		node.position.y = at * level_h
+		if node.visible:
+			assert(active_rects.size() < 8, "Visible landmark blocks exceed the shader's eight slots")
+			if active_rects.size() >= 8:
+				node.visible = false
+				continue
+			active_rects.append(r)
+			levels.append(at)
 	_landmark_levels = levels
-	var count := _landmarks.size() if near else 0
+	var count := active_rects.size()
 	for material in _all_materials() + [_sub_material]:
+		material.set_shader_parameter("landmark_rects", active_rects)
 		material.set_shader_parameter("landmark_levels", levels)
 		material.set_shader_parameter("landmark_count", count)
 
@@ -1099,6 +1130,11 @@ func _list_plan_lots(tiles: PackedFloat32Array, lots: Array[PackedFloat32Array],
 ## four more turn it an eighth further (tile_props.gdshader).
 func _plan_lots_of(i: int, j: int, v: int) -> Array:
 	var key := Vector2i(i, j)
+	# The terrace is still listed; only its old house mesh is replaced.
+	if _taverna != null and key == _taverna.parcel:
+		return []
+	if _series != null and _series.replaces(key):
+		return []
 	if not _plan_lots.has(key):
 		var kind := v & 255
 		match kind:
@@ -1301,7 +1337,7 @@ func _before_landmark(key: Vector2i) -> bool:
 		_landmark_parcels[Vector2i(-1, -1)] = true # looked
 		for id: String in plans.info.cities:
 			for building: Dictionary in plans.info.cities[id].get("buildings", []):
-				if building.has("landmark") and id == "rome":
+				if building.has("landmark") and id in ["rome", "verona"]:
 					var r: Array = building.parcels
 					for j in int(r[3]):
 						for i in int(r[2]):
@@ -1319,7 +1355,7 @@ func _plan_landmarks() -> Dictionary:
 		return out
 	for id: String in plans.info.cities:
 		for building: Dictionary in plans.info.cities[id].get("buildings", []):
-			if building.has("landmark") and id == "rome":
+			if building.has("landmark") and id in ["rome", "verona"]:
 				var r: Array = building.parcels
 				out[building.landmark] = Rect2(world_min + Vector2(r[0], r[1]) * plans.parcel_km, Vector2(r[2], r[3]) * plans.parcel_km)
 	return out
@@ -1374,7 +1410,10 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	if wanted != zoom:
 		_apply_level(wanted)
 	var c := ((centre - world_min) / tile_km).floor()
-	patch_origin = Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
+	var next_patch := Vector2i(int(c.x) - PATCH_N / 2, int(c.y) - PATCH_N / 2)
+	if next_patch != patch_origin:
+		patch_origin = next_patch
+		_place_landmarks()
 	# only the tiles around the view are drawn: each costs vertex work (and
 	# again for the shadow map), and up close the near-orthographic view
 	# sees a few dozen tiles across of the 320 (100 000 tiles a frame)
@@ -1434,7 +1473,13 @@ func update_view(centre: Vector2, width: float, span := INF, prop_span := INF) -
 	# beyond the prop patch towns are roof coloured tiles again
 	_terrain_material.set_shader_parameter("prop_origin", prop_origin)
 	_terrain_material.set_shader_parameter("prop_n", prop_n)
+	if _series != null:
+		var series_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)
+		_series.update_view(width, series_patch)
 	_update_town_list()
+	if _taverna != null:
+		var prop_patch := Rect2(world_min + Vector2(prop_origin) * tile_km, Vector2.ONE * prop_n * tile_km)
+		_taverna.update_view(width, level, prop_patch, ground_y(_taverna.centre))
 	_update_coast_list()
 	if sub_tiles:
 		_update_sub_window()

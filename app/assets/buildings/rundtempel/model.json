@@ -1,0 +1,30 @@
+{
+  "slug": "rundtempel",
+  "source_bounds_xyz": [
+    [
+      -7.449999809265137,
+      -7.449999809265137,
+      0.15000000596046448
+    ],
+    [
+      7.449999809265137,
+      7.449999809265137,
+      14.90000057220459
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 25466,
+      "material_batches": 10
+    },
+    "medium": {
+      "triangles": 4918,
+      "material_batches": 10
+    },
+    "far": {
+      "triangles": 904,
+      "material_batches": 10
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "slug": "macellum",
+  "source_bounds_xyz": [
+    [
+      -14.0,
+      -12.5,
+      0.0
+    ],
+    [
+      14.0,
+      12.5,
+      9.944228172302246
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 142502,
+      "material_batches": 22
+    },
+    "medium": {
+      "triangles": 28513,
+      "material_batches": 22
+    },
+    "far": {
+      "triangles": 4930,
+      "material_batches": 22
+    }
+  }
+}

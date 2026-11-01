@@ -1,0 +1,30 @@
+{
+  "slug": "capitolium",
+  "source_bounds_xyz": [
+    [
+      -7.599999904632568,
+      -9.0,
+      0.0
+    ],
+    [
+      7.599999904632568,
+      9.0,
+      16.709999084472656
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 36104,
+      "material_batches": 16
+    },
+    "medium": {
+      "triangles": 7247,
+      "material_batches": 16
+    },
+    "far": {
+      "triangles": 1399,
+      "material_batches": 16
+    }
+  }
+}

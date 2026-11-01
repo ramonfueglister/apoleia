@@ -1,0 +1,30 @@
+{
+  "slug": "toepferei",
+  "source_bounds_xyz": [
+    [
+      -8.899999618530273,
+      -8.899999618530273,
+      0.0
+    ],
+    [
+      8.899999618530273,
+      8.899999618530273,
+      5.900000095367432
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 80813,
+      "material_batches": 27
+    },
+    "medium": {
+      "triangles": 15497,
+      "material_batches": 27
+    },
+    "far": {
+      "triangles": 3248,
+      "material_batches": 27
+    }
+  }
+}

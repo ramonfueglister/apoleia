@@ -74,6 +74,13 @@ LANDMARK_KINDS = {"amphitheatre", "circus", "baths", "palace", "theatre", "stadi
 # and may move up to USER_SIZED_REACH parcels from their real place to find
 # room; the buildings after them move round them.
 USER_SIZED_M = {"arena": (31.75, 26.5), "baths": (35.25, 17.5), "theatre": (19.0, 29.0), "circus": (70.0, 14.0)}
+# Verona reference models include a 0.5 m construction margin on every side.
+VERONA_SIZED_M = {
+    "verona_arena": (27.75, 22.75), "verona_theatre": (26.75, 17.75),
+    "verona_capitolium": (15.5, 18.25), "verona_forum": (13.5, 38.0),
+    "verona_basilica": (11.0, 29.25), "verona_baths": (21.75, 17.5),
+}
+USER_SIZED_M.update(VERONA_SIZED_M)
 USER_SIZED_REACH = 6
 DIORAMA_KM_PER_M = 0.0238
 LANDMARK_PLAN_REACH = 0.9
@@ -189,10 +196,12 @@ FAMOUS = {"Amphitheatrum Flavium", "Forum Romanum", "Circus Maximus", "Thermae A
 
 
 def ruled_model(plan, b):
-    """The landmark model by the rule (USER_SIZED_M) a building of Rome is
-    drawn with, else None: the game draws these models only in Rome
-    (tile_terrain.gd), so a namesake elsewhere (Carthage's Thermae
-    Antoninianae) keeps its plan size."""
+    """Explicit reference model for Verona, or a named model in Rome.
+    A namesake elsewhere (Carthage's Thermae Antoninianae) keeps its
+    original plan size; model activation is scoped to its city."""
+    if plan.data.get("id") == "verona":
+        model = b.get("model")
+        return model if model in VERONA_SIZED_M else None
     model = LANDMARK_MODELS.get(b["name"])
     return model if model in USER_SIZED_M and plan.data.get("id") == "rome" else None
 
@@ -366,6 +375,10 @@ def build(data, scale, margin=6, terrain=None, hook=None):
 
     def fits(q0, r0, a_, b_):
         if q0 < 0 or r0 < 0 or q0 + a_ > w or r0 + b_ > h:
+            return False
+        # A small reference city must retain its dwellings when its monuments
+        # are selectively enlarged. Explicit opt-in; other cities are unchanged.
+        if data.get("landmark_preserve_housing") and urban[r0:r0 + b_, q0:q0 + a_].any():
             return False
         return not np.isin(kind[r0:r0 + b_, q0:q0 + a_], blocked).any()
 
@@ -899,7 +912,9 @@ def bake(scale, out, only=None):
                 continue
             (r0, q0), (r1, q1) = cells.min(0), cells.max(0)
             e = {"name": b["name"], "kind": b["kind"], "parcels": [int(i0 + q0), int(j0 + r0), int(q1 - q0 + 1), int(r1 - r0 + 1)]}
-            if b["name"] in LANDMARK_MODELS:
+            if cid == "verona" and ruled_model(g["plan"], b):
+                e["landmark"] = ruled_model(g["plan"], b)
+            elif b["name"] in LANDMARK_MODELS:
                 e["landmark"] = LANDMARK_MODELS[b["name"]]
             bl.append(e)
         table[cid] = {"name": data.get("name", cid), "status": data.get("status", "generated"),

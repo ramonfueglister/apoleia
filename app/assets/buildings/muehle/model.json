@@ -1,0 +1,30 @@
+{
+  "slug": "muehle",
+  "source_bounds_xyz": [
+    [
+      -4.599999904632568,
+      -4.599999904632568,
+      0.0
+    ],
+    [
+      4.599999904632568,
+      4.599999904632568,
+      8.24000072479248
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 52974,
+      "material_batches": 26
+    },
+    "medium": {
+      "triangles": 10120,
+      "material_batches": 26
+    },
+    "far": {
+      "triangles": 2263,
+      "material_batches": 26
+    }
+  }
+}

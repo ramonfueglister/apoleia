@@ -1,0 +1,30 @@
+{
+  "slug": "domus",
+  "source_bounds_xyz": [
+    [
+      -8.899999618530273,
+      -8.899999618530273,
+      0.0
+    ],
+    [
+      8.899999618530273,
+      8.899999618530273,
+      5.270000457763672
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 105462,
+      "material_batches": 27
+    },
+    "medium": {
+      "triangles": 20088,
+      "material_batches": 27
+    },
+    "far": {
+      "triangles": 4315,
+      "material_batches": 27
+    }
+  }
+}

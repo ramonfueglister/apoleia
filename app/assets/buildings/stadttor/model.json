@@ -1,0 +1,30 @@
+{
+  "slug": "stadttor",
+  "source_bounds_xyz": [
+    [
+      -14.899999618530273,
+      -6.0,
+      0.0
+    ],
+    [
+      14.899999618530273,
+      6.0,
+      21.519996643066406
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 76196,
+      "material_batches": 18
+    },
+    "medium": {
+      "triangles": 15145,
+      "material_batches": 18
+    },
+    "far": {
+      "triangles": 2478,
+      "material_batches": 18
+    }
+  }
+}

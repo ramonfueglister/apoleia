@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Start the actual game at any of the nineteen integrated Roman buildings."""
+import argparse
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import subprocess
+
+root = Path(__file__).resolve().parents[1]
+entries = json.loads((root / 'app/assets/buildings/roman_series_placements.json').read_text())['entries']
+by_id = {e['id']: e for e in entries}
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('building', nargs='?', default='amphitheater', choices=sorted(by_id))
+p.add_argument('--list', action='store_true', help='Show all buildings and cities')
+args, extra = p.parse_known_args()
+if args.list:
+    for e in entries:
+        print(f"{e['id']:16s} {e['label']} — {e['city']}")
+    raise SystemExit(0)
+plan = json.loads((root / 'artifacts/render-data/city-plans-r1/city-plans-x1.json').read_text())
+x, y, w, h = by_id[args.building]['rect']
+# Same equirectangular coordinates as Landscape.lonlat_to_world.
+world_min = [-5286.959516530886, -2223.9016046706583]
+wx = world_min[0] + (x + w / 2) * plan['parcel_km']
+wz = world_min[1] + (y + h / 2) * plan['parcel_km']
+lon = 19 + math.degrees(wx / (6371.0088 * math.cos(math.radians(41))))
+lat = 41 - math.degrees(wz / 6371.0088)
+meta = json.loads((root / f'app/assets/buildings/{args.building}/model.json').read_text())
+lo, hi = meta['source_bounds_xyz']
+fx, fy = hi[0] - lo[0], hi[1] - lo[1]
+if by_id[args.building].get('turns', 0) % 2:
+    fx, fy = fy, fx
+fit = min(1, .94 * min(w * .25 / (fx * .0238), h * .25 / (fy * .0238)))
+height = (hi[2] - lo[2]) * .0238 * fit
+width = max(1.5, max(w, h) * .60, height * 5.5)
+godot = os.environ.get('GODOT_BIN') or shutil.which('godot') or '/Applications/Godot.app/Contents/MacOS/Godot'
+subprocess.run([godot, '--headless', '--path', str(root / 'app'), '--editor', '--import'], check=True)
+os.execv(godot, [godot, '--path', str(root / 'app'), 'res://landscape.tscn', '--', f'--view={lon},{lat},{width}', *extra])

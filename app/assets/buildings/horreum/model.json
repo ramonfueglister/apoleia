@@ -1,0 +1,30 @@
+{
+  "slug": "horreum",
+  "source_bounds_xyz": [
+    [
+      -7.5,
+      -13.095000267028809,
+      0.0
+    ],
+    [
+      7.5,
+      13.0,
+      11.043904304504395
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 73372,
+      "material_batches": 18
+    },
+    "medium": {
+      "triangles": 14695,
+      "material_batches": 18
+    },
+    "far": {
+      "triangles": 2370,
+      "material_batches": 18
+    }
+  }
+}

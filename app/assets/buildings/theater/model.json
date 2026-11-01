@@ -1,0 +1,30 @@
+{
+  "slug": "theater",
+  "source_bounds_xyz": [
+    [
+      -13.199999809265137,
+      -9.082947731018066,
+      0.0
+    ],
+    [
+      13.199999809265137,
+      8.800000190734863,
+      17.93000030517578
+    ]
+  ],
+  "metres": true,
+  "lods": {
+    "detail": {
+      "triangles": 96470,
+      "material_batches": 18
+    },
+    "medium": {
+      "triangles": 17965,
+      "material_batches": 18
+    },
+    "far": {
+      "triangles": 4190,
+      "material_batches": 18
+    }
+  }
+}
